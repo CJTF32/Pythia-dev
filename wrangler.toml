@@ -1,7 +1,0 @@
-name = "pythia-scan"
-
-# D1 Database for pre-computed scores
-[[d1_databases]]
-binding = "DB"
-database_name = "pythian-scores"
-database_id = "bdd247e5-0153-474d-8b04-1858d0c61d1f"
