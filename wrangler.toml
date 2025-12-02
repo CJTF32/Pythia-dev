@@ -1,0 +1,13 @@
+name = "pythia-scan"
+main = "functions/api/scan.js"
+compatibility_date = "2023-03-14"
+compatibility_flags = ["nodejs_compat"]
+
+# Browser Rendering binding
+browser = { binding = "MYBROWSER" }
+
+# D1 Database for pre-computed scores
+[[d1_databases]]
+binding = "DB"
+database_name = "pythian-scores"
+database_id = "Ybdd247e5-0153-474d-8b04-1858d0c61d1f"  # Run: wrangler d1 create pythian-scores
