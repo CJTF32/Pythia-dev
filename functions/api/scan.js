@@ -162,37 +162,43 @@ export async function onRequest(context) {
     }
 
     // ============================================================================
-    // STEP 5: PARSE HTML & EXTRACT METRICS
+    // STEP 5: PARSE HTML & EXTRACT METRICS (REGEX-BASED FOR CLOUDFLARE WORKERS)
     // ============================================================================
     
-    const dom = new DOMParser().parseFromString(html, 'text/html');
-    
-    // Count resources
-    const scripts = dom.querySelectorAll('script').length;
-    const inlineScripts = Array.from(dom.querySelectorAll('script')).filter(s => !s.src).length;
+    // Count resources using regex (DOMParser not available in Workers)
+    const scriptMatches = html.match(/<script[\s\S]*?<\/script>/gi) || [];
+    const scripts = scriptMatches.length;
+    const inlineScripts = scriptMatches.filter(s => !s.match(/src\s*=\s*["']/i)).length;
     const externalScripts = scripts - inlineScripts;
-    const thirdPartyScripts = Array.from(dom.querySelectorAll('script[src]'))
-      .filter(s => !s.src.includes(hostname)).length;
     
-    const images = dom.querySelectorAll('img').length;
-    const imagesWithAlt = dom.querySelectorAll('img[alt]').length;
+    const scriptSrcMatches = html.match(/<script[^>]+src\s*=\s*["']([^"']+)["']/gi) || [];
+    const thirdPartyScripts = scriptSrcMatches.filter(s => {
+      const srcMatch = s.match(/src\s*=\s*["']([^"']+)["']/i);
+      return srcMatch && !srcMatch[1].includes(hostname);
+    }).length;
     
-    const stylesheets = dom.querySelectorAll('link[rel="stylesheet"]').length;
-    const inlineStyles = dom.querySelectorAll('style').length;
+    const imgMatches = html.match(/<img[^>]*>/gi) || [];
+    const images = imgMatches.length;
+    const imagesWithAlt = imgMatches.filter(img => img.match(/alt\s*=\s*["'][^"']*["']/i)).length;
+    
+    const stylesheets = (html.match(/<link[^>]+rel\s*=\s*["']stylesheet["'][^>]*>/gi) || []).length;
+    const inlineStyles = (html.match(/<style[\s\S]*?<\/style>/gi) || []).length;
     
     // Check for modern features
-    const hasViewport = !!dom.querySelector('meta[name="viewport"]');
-    const viewportContent = dom.querySelector('meta[name="viewport"]')?.getAttribute('content') || '';
+    const hasViewport = /<meta[^>]+name\s*=\s*["']viewport["']/i.test(html);
+    const viewportMatch = html.match(/<meta[^>]+name\s*=\s*["']viewport["'][^>]+content\s*=\s*["']([^"']+)["']/i);
+    const viewportContent = viewportMatch ? viewportMatch[1] : '';
     const viewportProperlyConfigured = viewportContent.includes('width=device-width');
     
-    const hasManifest = !!dom.querySelector('link[rel="manifest"]');
-    const hasModules = !!dom.querySelector('script[type="module"]');
+    const hasManifest = /<link[^>]+rel\s*=\s*["']manifest["']/i.test(html);
+    const hasModules = /<script[^>]+type\s*=\s*["']module["']/i.test(html);
     
     // SEO elements
-    const hasTitle = !!dom.querySelector('title');
-    const titleLength = dom.querySelector('title')?.textContent?.length || 0;
-    const ogTags = dom.querySelectorAll('meta[property^="og:"]').length;
-    const hasDescription = !!dom.querySelector('meta[name="description"]');
+    const hasTitle = /<title>/i.test(html);
+    const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
+    const titleLength = titleMatch ? titleMatch[1].length : 0;
+    const ogTags = (html.match(/<meta[^>]+property\s*=\s*["']og:/gi) || []).length;
+    const hasDescription = /<meta[^>]+name\s*=\s*["']description["']/i.test(html);
     
     // Security headers
     const hasHSTS = siteHeaders.has('strict-transport-security');
@@ -201,14 +207,16 @@ export async function onRequest(context) {
     
     // Estimate trackers (basic heuristic)
     const trackerDomains = ['google-analytics', 'gtag', 'facebook', 'doubleclick', 'analytics', 'tracker'];
-    const trackerCount = Array.from(dom.querySelectorAll('script[src]'))
-      .filter(s => trackerDomains.some(t => s.src.includes(t))).length;
+    const trackerCount = scriptSrcMatches.filter(s => 
+      trackerDomains.some(t => s.toLowerCase().includes(t))
+    ).length;
     
     // Check for CDN
     const cdnDomains = ['cloudflare', 'cloudfront', 'fastly', 'akamai', 'cdn'];
-    const isCDN = cdnDomains.some(cdn => finalUrl.includes(cdn) || 
-      Array.from(dom.querySelectorAll('script[src], link[href]'))
-        .some(el => (el.src || el.href || '').includes(cdn)));
+    const allResources = [...scriptSrcMatches, ...(html.match(/<link[^>]+href\s*=\s*["']([^"']+)["']/gi) || [])];
+    const isCDN = cdnDomains.some(cdn => 
+      finalUrl.includes(cdn) || allResources.some(r => r.toLowerCase().includes(cdn))
+    );
     
     // Check caching
     const cacheControl = siteHeaders.get('cache-control') || '';
