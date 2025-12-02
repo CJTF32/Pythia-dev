@@ -1,4 +1,5 @@
-import puppeteer from "@cloudflare/puppeteer";
+// Dynamic import to avoid bundling issues
+// Puppeteer is provided by Cloudflare at runtime
 
 export async function onRequest(context) {
   const corsHeaders = {
@@ -115,6 +116,9 @@ export async function onRequest(context) {
         // ============================================================================
         if (context.env.MYBROWSER) {
           try {
+            // Dynamic import of puppeteer (avoids bundling issues)
+            const { default: puppeteer } = await import('@cloudflare/puppeteer');
+            
             const browserStart = Date.now();
             const browser = await puppeteer.launch(context.env.MYBROWSER);
             const page = await browser.newPage();
