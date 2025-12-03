@@ -807,11 +807,11 @@ function displayResults(data) {
             
             <!-- Revenue Impact Summary -->
             <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
-                <h4 class="text-sm font-bold text-blue-900 mb-2">💰 Revenue Impact</h4>
+                <h4 class="text-sm font-bold text-blue-900 mb-2">💰 Business Impact</h4>
                 <p class="text-sm text-blue-800">${scores.revenueSummary || 'Performance analysis complete.'}</p>
                 ${scores.estimatedRevenueLoss > 10 ? `
                 <p class="text-xs text-blue-700 mt-2">
-                    <strong>Estimated loss:</strong> ~${scores.estimatedRevenueLoss}% of potential digital revenue due to speed, mobile, and SEO issues.
+                    <strong>Estimated opportunity loss:</strong> ~${scores.estimatedRevenueLoss}% of potential conversions due to speed, mobile, and SEO issues.
                 </p>` : ''}
             </div>
             
