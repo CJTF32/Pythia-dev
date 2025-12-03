@@ -633,23 +633,23 @@ export async function onRequest(context) {
     // Generate executive summary
     function getRevenueSummary(mscore, loss, grade) {
       if (mscore >= 95) {
-        return `Exceptional digital performance. You're capturing ~${Math.round(mscore)}% of potential revenue with minimal optimization opportunities.`;
+        return `Exceptional digital performance. You're capturing ~${Math.round(mscore)}% of potential conversions with minimal optimization opportunities.`;
       } else if (mscore >= 90) {
-        return `Excellent performance. Minor optimizations could unlock the remaining ~${loss}% revenue potential.`;
+        return `Excellent performance. Minor optimizations could unlock the remaining ~${loss}% conversion potential.`;
       } else if (mscore >= 85) {
-        return `Strong performance. Speed and mobile improvements could capture ~${loss}% more revenue.`;
+        return `Strong performance. Speed and mobile improvements could capture ~${loss}% more conversions.`;
       } else if (mscore >= 80) {
-        return `Good baseline, but you're likely losing ~${loss}% of potential revenue to performance issues.`;
+        return `Good baseline, but you're likely losing ~${loss}% of potential conversions to performance issues.`;
       } else if (mscore >= 75) {
         return `Fair performance. Performance issues are costing an estimated ${loss}% in lost conversions.`;
       } else if (mscore >= 70) {
-        return `Below average performance. Critical issues blocking ~${loss}% of revenue potential.`;
+        return `Below average performance. Critical issues blocking ~${loss}% of conversion potential.`;
       } else if (mscore >= 65) {
-        return `Poor performance. Severe issues causing ~${loss}% revenue loss. Immediate action required.`;
+        return `Poor performance. Severe issues causing ~${loss}% conversion loss. Immediate action required.`;
       } else if (mscore >= 60) {
-        return `Critical performance issues. You're realizing only ~${Math.round(mscore)}% of digital revenue potential.`;
+        return `Critical performance issues. You're achieving only ~${Math.round(mscore)}% of potential digital conversions.`;
       } else {
-        return `Severe problems blocking majority of revenue. Estimated ${loss}%+ revenue loss requires urgent intervention.`;
+        return `Severe problems blocking majority of conversions. Estimated ${loss}%+ opportunity loss requires urgent intervention.`;
       }
     }
     
