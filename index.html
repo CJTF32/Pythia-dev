@@ -381,8 +381,10 @@
     <!-- ==================== ABOUT PAGE ==================== -->
     <div id="aboutPage" class="page-content">
         <div class="modern-card bg-white rounded-lg shadow-lg p-8">
-            <button onclick="navigateTo('home')" class="back-button mb-4 text-indigo-600 hover:text-indigo-800">← Back to Home</button>
-            <h2 class="text-3xl font-bold mb-6 text-gray-800">About Pythia</h2>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-800">About Pythia</h2>
+                <button onclick="openMenu()" class="p-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-xl">☰</button>
+            </div>
             <div class="about-content space-y-4 text-gray-700">
                 <p class="text-lg">Pythia is <strong>The Digital Health Rating Agency</strong> — providing standardized, executive-friendly website health ratings.</p>
                 
@@ -406,8 +408,10 @@
     <!-- ==================== METHODOLOGY PAGE ==================== -->
     <div id="methodologyPage" class="page-content">
         <div class="modern-card bg-white rounded-lg shadow-lg p-8">
-            <button onclick="navigateTo('home')" class="back-button mb-4 text-indigo-600 hover:text-indigo-800">← Back to Home</button>
-            <h2 class="text-3xl font-bold mb-6 text-gray-800">Methodology</h2>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-800">Methodology</h2>
+                <button onclick="openMenu()" class="p-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-xl">☰</button>
+            </div>
             
             <div class="methodology-box bg-green-50 border-2 border-green-600 rounded-lg p-6 mb-6">
                 <h3 class="text-xl font-bold mb-4 text-green-900">Physics-Aware Scoring</h3>
@@ -448,17 +452,17 @@
                 <h3 class="text-xl font-bold mt-6 text-gray-800">11 Core Components</h3>
                 <p>Our P-Score aggregates 11 weighted components:</p>
                 <ol class="list-decimal list-inside ml-4 mt-2 space-y-2">
-                    <li><strong>Karpov (25%):</strong> Load time, TTFB, resource count</li>
-                    <li><strong>Tyche (20%):</strong> Script optimization</li>
-                    <li><strong>Vortex (10%):</strong> Image optimization</li>
-                    <li><strong>Nexus (8%):</strong> Mobile responsiveness</li>
-                    <li><strong>Helix (7%):</strong> Privacy & security</li>
-                    <li><strong>Pulse (6%):</strong> SEO foundations</li>
-                    <li><strong>Nova (6%):</strong> CDN & caching</li>
-                    <li><strong>Eden (6%):</strong> Page weight</li>
-                    <li><strong>Aether (6%):</strong> Modern standards</li>
-                    <li><strong>Quantum (5%):</strong> Meta-optimization</li>
-                    <li><strong>Echo (1%):</strong> Console errors</li>
+                    <li><strong>Karpov:</strong> Speed & load time (TTFB, rendering, resource loading)</li>
+                    <li><strong>Nexus:</strong> Mobile performance & responsiveness</li>
+                    <li><strong>Pulse:</strong> SEO foundations & discoverability</li>
+                    <li><strong>Tyche:</strong> Interactivity & script optimization</li>
+                    <li><strong>Vortex:</strong> Accessibility & inclusive design</li>
+                    <li><strong>Helix:</strong> Privacy & security measures</li>
+                    <li><strong>Nova:</strong> CDN & caching infrastructure</li>
+                    <li><strong>Eden:</strong> Page weight & resource efficiency</li>
+                    <li><strong>Aether:</strong> Modern web standards & technologies</li>
+                    <li><strong>Quantum:</strong> Code quality & optimization</li>
+                    <li><strong>Echo:</strong> Sustainability & carbon footprint</li>
                 </ol>
                 
                 <p class="mt-4 text-sm text-gray-600"><a href="https://p-score.me" class="text-indigo-600 hover:underline" target="_blank">Learn more about our methodology →</a></p>
@@ -469,8 +473,10 @@
     <!-- ==================== TOP 50 PAGE ==================== -->
     <div id="top50Page" class="page-content">
         <div class="modern-card bg-white rounded-lg shadow-lg p-8">
-            <button onclick="navigateTo('home')" class="back-button mb-4 text-indigo-600 hover:text-indigo-800">← Back to Home</button>
-            <h2 class="text-3xl font-bold mb-6 text-gray-800">Top 50 Websites</h2>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-800">Top 50 Websites</h2>
+                <button onclick="openMenu()" class="p-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-xl">☰</button>
+            </div>
             <p class="text-gray-600 mb-4">Scan the world's most popular websites</p>
             <button onclick="scanTop50()" class="retro-button w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors mb-6">
                 Start Scanning Top 50
@@ -484,8 +490,10 @@
     <!-- ==================== BATTLE PAGE (Compare Two Websites) ==================== -->
     <div id="battlePage" class="page-content">
         <div class="modern-card bg-white rounded-lg shadow-lg p-8">
-            <button onclick="navigateTo('home')" class="back-button mb-4 text-indigo-600 hover:text-indigo-800">← Back to Home</button>
-            <h2 class="text-3xl font-bold mb-6 text-gray-800">Compare Two Websites</h2>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-800">Compare Two Websites</h2>
+                <button onclick="openMenu()" class="p-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-xl">☰</button>
+            </div>
             <p class="text-gray-600 mb-6">Enter two URLs to see which performs better</p>
             
             <div class="grid md:grid-cols-2 gap-4 mb-6">
@@ -529,8 +537,10 @@
     <!-- ==================== RIVALRIES PAGE (Retro Mode Only) ==================== -->
     <div id="rivalriesPage" class="page-content">
         <div class="modern-card bg-white rounded-lg shadow-lg p-8">
-            <button onclick="navigateTo('home')" class="back-button mb-4 text-indigo-600 hover:text-indigo-800">← Back to Home</button>
-            <h2 class="text-3xl font-bold mb-6 text-gray-800">Famous Rivalries</h2>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-800">Famous Rivalries</h2>
+                <button onclick="openMenu()" class="p-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-xl">☰</button>
+            </div>
             <p class="text-gray-600 mb-6">Classic tech battles — click any rivalry to compare</p>
             <div id="rivalriesList">
                 <!-- Rivalries will be inserted here -->
@@ -786,14 +796,14 @@ function displayResults(data) {
                 <h4 class="text-lg font-bold mb-3 text-gray-800">Component Breakdown</h4>
                 <div class="space-y-2">
                     ${renderComponentBar('Karpov (Speed)', scores.karpov, 30)}
-                    ${renderComponentBar('Nexus (Mobile)', scores.nexus, 20)}
-                    ${renderComponentBar('Pulse (SEO)', scores.pulse, 15)}
-                    ${renderComponentBar('Vortex (Accessibility)', scores.vortex, 12)}
+                    ${renderComponentBar('Nexus (Mobile)', scores.nexus, 18)}
+                    ${renderComponentBar('Pulse (SEO)', scores.pulse, 13)}
                     ${renderComponentBar('Tyche (Interactivity)', scores.tyche, 10)}
+                    ${renderComponentBar('Vortex (Accessibility)', scores.vortex, 10)}
+                    ${renderComponentBar('Helix (Privacy)', scores.helix, 6)}
                     ${renderComponentBar('Nova (CDN)', scores.nova, 5)}
-                    ${renderComponentBar('Helix (Privacy)', scores.helix, 3)}
-                    ${renderComponentBar('Eden (Weight)', scores.eden, 2)}
-                    ${renderComponentBar('Aether (Modern)', scores.aether, 1)}
+                    ${renderComponentBar('Eden (Weight)', scores.eden, 4)}
+                    ${renderComponentBar('Aether (Modern)', scores.aether, 2)}
                     ${renderComponentBar('Quantum (Code)', scores.quantum, 1)}
                     ${renderComponentBar('Echo (Sustainability)', scores.echo, 1)}
                 </div>
@@ -835,7 +845,7 @@ function renderComponentBar(name, score, weight) {
         <div>
             <div class="flex justify-between text-sm mb-1">
                 <span class="text-gray-700">${name}</span>
-                <span class="text-gray-600">${score}/100 (${weight}%)</span>
+                <span class="text-gray-600">${score}/100</span>
             </div>
             <div class="w-full bg-gray-200 rounded-full h-3">
                 <div class="${color} h-3 rounded-full" style="width: ${score}%"></div>
