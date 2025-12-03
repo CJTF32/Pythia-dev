@@ -1,6 +1,138 @@
 // Pythia Scan Engine - REVISED WITH CORRECT WEIGHTS & GRANULAR SCORING
 // Fixed: Weights now sum to 100%, granular continuous scoring
 
+// ============================================================================
+// SECTOR CLASSIFICATION
+// ============================================================================
+function classifySector(domain) {
+  const lowDomain = domain.toLowerCase();
+  
+  const patterns = {
+    'E-commerce': ['amazon', 'ebay', 'walmart', 'shop', 'store', 'buy', 'cart', 'etsy', 
+                   'alibaba', 'target', 'bestbuy', 'costco', 'ikea', 'wayfair', 'zappos',
+                   'nike', 'adidas', 'gap', 'zara', 'hm'],
+    'Social Media': ['facebook', 'twitter', 'instagram', 'linkedin', 'reddit', 'pinterest',
+                     'snapchat', 'tiktok', 'whatsapp', 'telegram', 'discord'],
+    'Technology': ['microsoft', 'apple', 'github', 'gitlab', 'stack', 'npm', 'docker',
+                   'cloudflare', 'aws', 'azure', 'salesforce', 'adobe', 'slack', 'notion'],
+    'Media & Entertainment': ['netflix', 'hulu', 'disney', 'hbo', 'spotify', 'youtube',
+                              'twitch', 'vimeo', 'imdb', 'soundcloud'],
+    'News & Media': ['news', 'times', 'post', 'journal', 'cnn', 'bbc', 'guardian', 'reuters',
+                     'bloomberg', 'forbes', 'wired', 'verge'],
+    'Healthcare': ['health', 'medical', 'hospital', 'clinic', 'doctor', 'mayo', 'webmd'],
+    'Financial Services': ['bank', 'finance', 'trading', 'invest', 'paypal', 'stripe',
+                          'coinbase', 'robinhood', 'chase', 'wellsfargo'],
+    'Education': ['edu', 'university', 'college', 'school', 'learning', 'coursera', 'udemy'],
+    'Government': ['.gov', 'government'],
+    'Travel & Hospitality': ['travel', 'hotel', 'booking', 'airbnb', 'expedia', 'trip'],
+    'Real Estate': ['zillow', 'realtor', 'redfin', 'trulia', 'apartment', 'rent'],
+    'Food & Beverage': ['restaurant', 'food', 'delivery', 'grubhub', 'doordash', 'starbucks']
+  };
+  
+  for (const [sector, keywords] of Object.entries(patterns)) {
+    for (const keyword of keywords) {
+      if (lowDomain.includes(keyword)) {
+        return sector;
+      }
+    }
+  }
+  
+  return 'Other';
+}
+
+function getSectorSpecificSummary(mscore, loss, sector) {
+  const realized = Math.round(mscore);
+  const lossRounded = loss.toFixed(0);
+  
+  const summaries = {
+    'E-commerce': {
+      high: `Exceptional performance. You're capturing ~${realized}% of potential revenue.`,
+      good: `Strong performance. You're realizing ${realized}% of revenue potential.`,
+      medium: `You're realizing ${realized}% of potential revenue. ~${lossRounded}% lost to cart abandonment and slow checkout.`,
+      low: `Critical issues. You're losing ~${lossRounded}% of potential revenue to performance problems.`
+    },
+    'SaaS': {
+      high: `Exceptional conversion efficiency. ${realized}% trial-to-paid conversion rate.`,
+      good: `Strong conversion rate. ${realized}% of trials convert to paid.`,
+      medium: `${realized}% trial conversion efficiency. ~${lossRounded}% lost to signup friction.`,
+      low: `Poor conversion. ${lossRounded}% of trials abandon before paying.`
+    },
+    'Technology': {
+      high: `Exceptional. ${realized}% download/signup completion rate.`,
+      good: `Strong performance. ${realized}% conversion on downloads/signups.`,
+      medium: `${realized}% completion rate. ~${lossRounded}% abandon before download/signup.`,
+      low: `${lossRounded}% abandon before completing downloads or signups.`
+    },
+    'Financial Services': {
+      high: `Exceptional account opening rate. ${realized}% complete signup.`,
+      good: `Strong signup flow. ${realized}% complete account opening.`,
+      medium: `${realized}% account opening completion. ~${lossRounded}% drop off in signup funnel.`,
+      low: `${lossRounded}% abandon signup process. Critical friction in account opening.`
+    },
+    'Government': {
+      high: `Exceptional service delivery. ${realized}% complete online services.`,
+      good: `Strong service completion. ${realized}% of citizens complete online forms.`,
+      medium: `${realized}% service completion. ~${lossRounded}% abandon online → call center costs.`,
+      low: `${lossRounded}% abandon online services, significantly increasing support costs.`
+    },
+    'Healthcare': {
+      high: `Exceptional patient experience. ${realized}% complete appointment booking.`,
+      good: `Strong booking flow. ${realized}% complete online appointments.`,
+      medium: `${realized}% booking completion. ~${lossRounded}% abandon appointment forms.`,
+      low: `${lossRounded}% abandon booking process. Losing significant patient acquisition.`
+    },
+    'Education': {
+      high: `Exceptional enrollment rate. ${realized}% complete applications.`,
+      good: `Strong application flow. ${realized}% complete enrollment.`,
+      medium: `${realized}% application completion. ~${lossRounded}% of prospective students drop off.`,
+      low: `${lossRounded}% application abandonment. Critical enrollment funnel issues.`
+    },
+    'Travel & Hospitality': {
+      high: `Exceptional booking rate. ${realized}% complete reservations.`,
+      good: `Strong booking flow. ${realized}% complete purchases.`,
+      medium: `${realized}% booking completion. ~${lossRounded}% cart abandonment.`,
+      low: `${lossRounded}% abandon bookings. Significant revenue loss from cart abandonment.`
+    },
+    'Real Estate': {
+      high: `Exceptional lead generation. ${realized}% complete contact forms.`,
+      good: `Strong lead capture. ${realized}% submit contact information.`,
+      medium: `${realized}% lead conversion. ~${lossRounded}% abandon contact forms.`,
+      low: `${lossRounded}% abandon lead forms. Significant lead generation loss.`
+    },
+    'Food & Beverage': {
+      high: `Exceptional order rate. ${realized}% complete online orders.`,
+      good: `Strong checkout flow. ${realized}% complete orders.`,
+      medium: `${realized}% order completion. ~${lossRounded}% delivery cart abandonment.`,
+      low: `${lossRounded}% abandon orders. Critical issues in checkout flow.`
+    },
+    'News & Media': {
+      high: `Exceptional engagement. ${realized}% pageview retention.`,
+      good: `Strong content delivery. ${realized}% visitors engage with content.`,
+      medium: `${realized}% engagement rate. ~${lossRounded}% lost to bounce and slow load.`,
+      low: `${lossRounded}% bounce rate. Significant ad revenue loss from poor performance.`
+    },
+    'Media & Entertainment': {
+      high: `Exceptional engagement. ${realized}% content completion.`,
+      good: `Strong user retention. ${realized}% engage with content.`,
+      medium: `${realized}% engagement rate. ~${lossRounded}% lost to bounce (ad revenue impact).`,
+      low: `${lossRounded}% bounce rate. Critical revenue loss from poor performance.`
+    },
+    'Other': {
+      high: `Exceptional performance. ${realized}% conversion efficiency.`,
+      good: `Strong digital performance. ${realized}% achieving goals.`,
+      medium: `${realized}% conversion rate. ~${lossRounded}% opportunity loss from performance issues.`,
+      low: `${lossRounded}% opportunity loss. Critical performance issues blocking conversions.`
+    }
+  };
+  
+  const sectorSummaries = summaries[sector] || summaries['Other'];
+  
+  if (mscore >= 90) return sectorSummaries.high;
+  if (mscore >= 75) return sectorSummaries.good;
+  if (mscore >= 60) return sectorSummaries.medium;
+  return sectorSummaries.low;
+}
+
 export async function onRequest(context) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -33,6 +165,9 @@ export async function onRequest(context) {
     const fullUrl = url.startsWith('http') ? url : `https://${url}`;
     const hostname = new URL(fullUrl).hostname.replace('www.', '');
     const timestamp = new Date().toISOString();
+    
+    // Auto-detect sector from domain (or use provided sector)
+    const detectedSector = sector || classifySector(hostname);
     
     // ============================================================================
     // STEP 1: CHECK D1 CACHE (24 hour TTL)
@@ -630,30 +765,8 @@ export async function onRequest(context) {
     const revenueRealization = Math.round(finalMscore);
     const estimatedRevenueLoss = 100 - revenueRealization;
     
-    // Generate executive summary
-    function getRevenueSummary(mscore, loss, grade) {
-      if (mscore >= 95) {
-        return `Exceptional digital performance. You're capturing ~${Math.round(mscore)}% of potential conversions with minimal optimization opportunities.`;
-      } else if (mscore >= 90) {
-        return `Excellent performance. Minor optimizations could unlock the remaining ~${loss}% conversion potential.`;
-      } else if (mscore >= 85) {
-        return `Strong performance. Speed and mobile improvements could capture ~${loss}% more conversions.`;
-      } else if (mscore >= 80) {
-        return `Good baseline, but you're likely losing ~${loss}% of potential conversions to performance issues.`;
-      } else if (mscore >= 75) {
-        return `Fair performance. Performance issues are costing an estimated ${loss}% in lost conversions.`;
-      } else if (mscore >= 70) {
-        return `Below average performance. Critical issues blocking ~${loss}% of conversion potential.`;
-      } else if (mscore >= 65) {
-        return `Poor performance. Severe issues causing ~${loss}% conversion loss. Immediate action required.`;
-      } else if (mscore >= 60) {
-        return `Critical performance issues. You're achieving only ~${Math.round(mscore)}% of potential digital conversions.`;
-      } else {
-        return `Severe problems blocking majority of conversions. Estimated ${loss}%+ opportunity loss requires urgent intervention.`;
-      }
-    }
-    
-    const revenueSummary = getRevenueSummary(finalMscore, estimatedRevenueLoss, moodyRating.grade);
+    // Generate sector-specific executive summary
+    const revenueSummary = getSectorSpecificSummary(finalMscore, estimatedRevenueLoss, detectedSector);
     
     // ============================================================================
     // STEP 6: BUILD RESPONSE (with detailed data)
@@ -668,6 +781,7 @@ export async function onRequest(context) {
       revenueRealization: revenueRealization,
       estimatedRevenueLoss: estimatedRevenueLoss,
       revenueSummary: revenueSummary,
+      sector: detectedSector,
       hostname,
       url: finalUrl,
       timestamp,
