@@ -752,6 +752,12 @@ function displayResults(data) {
     // Transform nested API response to flat structure for display
     const scores = {
         pscore: data.pscore,
+        mscore: data.mscore || data.pscore, // Fallback to pscore if mscore not available
+        moodyGrade: data.moodyGrade || 'N/A',
+        moodyDescription: data.moodyDescription || '',
+        revenueRealization: data.revenueRealization || Math.round(data.pscore),
+        estimatedRevenueLoss: data.estimatedRevenueLoss || (100 - Math.round(data.pscore)),
+        revenueSummary: data.revenueSummary || '',
         url: data.url,
         karpov: data.data?.karpov?.score || 0,
         tyche: data.data?.tyche?.score || 0,
@@ -774,21 +780,39 @@ function displayResults(data) {
         <div class="modern-card bg-white rounded-lg shadow-lg p-8 mb-6">
             <h3 class="text-2xl font-bold mb-4 text-gray-800">${hostname}</h3>
             
-            <!-- Dual Rating Display -->
-            <div class="grid md:grid-cols-2 gap-6 mb-6">
-                <!-- Executive View: Credit Rating -->
-                <div class="text-center p-6 bg-gray-50 rounded-lg">
-                    <p class="text-sm text-gray-600 mb-2 font-semibold">Executive Rating</p>
-                    <div class="credit-rating ${rating.class}">${rating.rating}</div>
-                    <p class="text-gray-700 mt-2">${rating.description} Digital Health</p>
+            <!-- Triple Rating Display -->
+            <div class="grid md:grid-cols-3 gap-4 mb-6">
+                <!-- Executive View: Moody's Grade -->
+                <div class="text-center p-6 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg border-2 border-indigo-200">
+                    <p class="text-xs text-gray-600 mb-2 font-semibold uppercase tracking-wide">Moody's Rating</p>
+                    <div class="text-5xl font-bold mb-2 ${scores.mscore >= 85 ? 'text-green-600' : scores.mscore >= 70 ? 'text-yellow-600' : 'text-red-600'}">${scores.moodyGrade}</div>
+                    <p class="text-sm text-gray-700">${scores.moodyDescription}</p>
+                </div>
+                
+                <!-- Business View: M-Score -->
+                <div class="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border-2 border-green-200">
+                    <p class="text-xs text-gray-600 mb-2 font-semibold uppercase tracking-wide">Revenue Score</p>
+                    <div class="text-5xl font-bold mb-2 ${scores.mscore >= 85 ? 'text-green-600' : scores.mscore >= 70 ? 'text-yellow-600' : 'text-red-600'}">${scores.mscore}</div>
+                    <p class="text-sm text-gray-700">M-Score / 100</p>
+                    <p class="text-xs text-gray-600 mt-2">${scores.revenueRealization}% realized</p>
                 </div>
                 
                 <!-- Developer View: P-Score -->
-                <div class="text-center p-6 bg-gray-50 rounded-lg">
-                    <p class="text-sm text-gray-600 mb-2 font-semibold">Developer Score</p>
-                    <div class="text-6xl font-bold ${scores.pscore >= 80 ? 'text-green-600' : scores.pscore >= 60 ? 'text-yellow-600' : 'text-red-600'}">${scores.pscore}</div>
-                    <p class="text-gray-700 mt-2">P-Score / 100</p>
+                <div class="text-center p-6 bg-gray-50 rounded-lg border-2 border-gray-200">
+                    <p class="text-xs text-gray-600 mb-2 font-semibold uppercase tracking-wide">Technical Score</p>
+                    <div class="text-5xl font-bold mb-2 ${scores.pscore >= 80 ? 'text-green-600' : scores.pscore >= 60 ? 'text-yellow-600' : 'text-red-600'}">${scores.pscore}</div>
+                    <p class="text-sm text-gray-700">P-Score / 100</p>
                 </div>
+            </div>
+            
+            <!-- Revenue Impact Summary -->
+            <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                <h4 class="text-sm font-bold text-blue-900 mb-2">💰 Revenue Impact</h4>
+                <p class="text-sm text-blue-800">${scores.revenueSummary || 'Performance analysis complete.'}</p>
+                ${scores.estimatedRevenueLoss > 10 ? `
+                <p class="text-xs text-blue-700 mt-2">
+                    <strong>Estimated loss:</strong> ~${scores.estimatedRevenueLoss}% of potential digital revenue due to speed, mobile, and SEO issues.
+                </p>` : ''}
             </div>
             
             <!-- Component Breakdown -->
