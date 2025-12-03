@@ -155,15 +155,30 @@ export async function onRequest(context) {
   try {
     const { url, sector } = await context.request.json();
     
-    if (!url) {
-      return new Response(JSON.stringify({ error: 'URL required' }), {
+    if (!url || typeof url !== 'string' || url.trim() === '') {
+      return new Response(JSON.stringify({ error: 'Valid URL string required' }), {
         status: 400,
         headers: corsHeaders
       });
     }
 
-    const fullUrl = url.startsWith('http') ? url : `https://${url}`;
-    const hostname = new URL(fullUrl).hostname.replace('www.', '');
+    const cleanUrl = url.trim();
+    const fullUrl = cleanUrl.startsWith('http') ? cleanUrl : `https://${cleanUrl}`;
+    
+    let hostname;
+    try {
+      hostname = new URL(fullUrl).hostname.replace('www.', '');
+    } catch (urlError) {
+      return new Response(JSON.stringify({ 
+        error: 'Invalid URL format',
+        details: `Could not parse URL: ${cleanUrl}`,
+        hint: 'Try format like: example.com or https://example.com'
+      }), {
+        status: 400,
+        headers: corsHeaders
+      });
+    }
+    
     const timestamp = new Date().toISOString();
     
     // Auto-detect sector from domain (or use provided sector)
