@@ -739,8 +739,25 @@ async function analyzeSite() {
 // DISPLAY RESULTS
 // ============================================================================
 function displayResults(data) {
-    const rating = pscoreToRating(data.pscore);
-    const hostname = new URL(data.url).hostname.replace('www.', '');
+    // Transform nested API response to flat structure for display
+    const scores = {
+        pscore: data.pscore,
+        url: data.url,
+        karpov: data.data?.karpov?.score || 0,
+        tyche: data.data?.tyche?.score || 0,
+        vortex: data.data?.vortex?.score || 0,
+        nexus: data.data?.nexus?.score || 0,
+        helix: data.data?.helix?.score || 0,
+        pulse: data.data?.pulse?.score || 0,
+        nova: data.data?.nova?.score || 0,
+        eden: data.data?.eden?.score || 0,
+        aether: data.data?.aether?.score || 0,
+        quantum: data.data?.quantum?.score || 0,
+        echo: data.data?.echo?.score || 0
+    };
+    
+    const rating = pscoreToRating(scores.pscore);
+    const hostname = new URL(scores.url).hostname.replace('www.', '');
     
     const resultsDiv = document.getElementById('scanResults');
     resultsDiv.innerHTML = `
@@ -759,7 +776,7 @@ function displayResults(data) {
                 <!-- Developer View: P-Score -->
                 <div class="text-center p-6 bg-gray-50 rounded-lg">
                     <p class="text-sm text-gray-600 mb-2 font-semibold">Developer Score</p>
-                    <div class="text-6xl font-bold ${data.pscore >= 80 ? 'text-green-600' : data.pscore >= 60 ? 'text-yellow-600' : 'text-red-600'}">${data.pscore}</div>
+                    <div class="text-6xl font-bold ${scores.pscore >= 80 ? 'text-green-600' : scores.pscore >= 60 ? 'text-yellow-600' : 'text-red-600'}">${scores.pscore}</div>
                     <p class="text-gray-700 mt-2">P-Score / 100</p>
                 </div>
             </div>
@@ -768,17 +785,17 @@ function displayResults(data) {
             <div class="mt-6">
                 <h4 class="text-lg font-bold mb-3 text-gray-800">Component Breakdown</h4>
                 <div class="space-y-2">
-                    ${renderComponentBar('Karpov (Load Time)', data.karpov, 25)}
-                    ${renderComponentBar('Tyche (Scripts)', data.tyche, 20)}
-                    ${renderComponentBar('Vortex (Images)', data.vortex, 10)}
-                    ${renderComponentBar('Nexus (Mobile)', data.nexus, 8)}
-                    ${renderComponentBar('Helix (Privacy)', data.helix, 7)}
-                    ${renderComponentBar('Pulse (SEO)', data.pulse, 6)}
-                    ${renderComponentBar('Nova (CDN)', data.nova, 6)}
-                    ${renderComponentBar('Eden (Size)', data.eden, 6)}
-                    ${renderComponentBar('Aether (Modern)', data.aether, 6)}
-                    ${renderComponentBar('Quantum (Meta)', data.quantum, 5)}
-                    ${renderComponentBar('Echo (Errors)', data.echo, 1)}
+                    ${renderComponentBar('Karpov (Load Time)', scores.karpov, 25)}
+                    ${renderComponentBar('Tyche (Scripts)', scores.tyche, 20)}
+                    ${renderComponentBar('Vortex (Images)', scores.vortex, 10)}
+                    ${renderComponentBar('Nexus (Mobile)', scores.nexus, 8)}
+                    ${renderComponentBar('Helix (Privacy)', scores.helix, 7)}
+                    ${renderComponentBar('Pulse (SEO)', scores.pulse, 6)}
+                    ${renderComponentBar('Nova (CDN)', scores.nova, 6)}
+                    ${renderComponentBar('Eden (Size)', scores.eden, 6)}
+                    ${renderComponentBar('Aether (Modern)', scores.aether, 6)}
+                    ${renderComponentBar('Quantum (Meta)', scores.quantum, 5)}
+                    ${renderComponentBar('Echo (Errors)', scores.echo, 1)}
                 </div>
             </div>
             
@@ -786,7 +803,7 @@ function displayResults(data) {
             <div class="mt-6 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
                 <h4 class="text-lg font-bold mb-2 text-gray-800">💸 What if this was Amazon?</h4>
                 <p class="text-gray-700 text-sm mb-3">Amazon loses ~$1.6B/year from slow load times. Calculate your potential impact:</p>
-                <button onclick="showAmazonCalculator(${data.pscore}, '${hostname}')" class="w-full bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-700">
+                <button onclick="showAmazonCalculator(${scores.pscore}, '${hostname}')" class="w-full bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-700">
                     Calculate Revenue Impact
                 </button>
             </div>
@@ -795,7 +812,7 @@ function displayResults(data) {
             <div class="mt-4 p-4 bg-green-50 border-2 border-green-300 rounded-lg">
                 <h4 class="text-lg font-bold mb-2 text-gray-800">📊 Your Company Calculator</h4>
                 <p class="text-gray-700 text-sm mb-3">Estimate performance impact on your revenue:</p>
-                <button onclick="showCustomCalculator(${data.pscore}, '${hostname}')" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">
+                <button onclick="showCustomCalculator(${scores.pscore}, '${hostname}')" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">
                     Calculate for Your Business
                 </button>
             </div>
@@ -804,7 +821,7 @@ function displayResults(data) {
             <div class="mt-4 p-4 bg-purple-50 border-2 border-purple-300 rounded-lg">
                 <h4 class="text-lg font-bold mb-2 text-gray-800">💎 Digital Health Score™</h4>
                 <p class="text-gray-700 text-sm mb-3">See how this rating compares to industry benchmarks:</p>
-                <button onclick="showDigitalHealthScore(${data.pscore}, '${rating.rating}')" class="w-full bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700">
+                <button onclick="showDigitalHealthScore(${scores.pscore}, '${rating.rating}')" class="w-full bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700">
                     View Digital Health Analysis
                 </button>
             </div>
