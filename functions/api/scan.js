@@ -1,5 +1,5 @@
-// Pythia Scan Engine - Working Version for Benchmark Dataset
-// No rate limiting, proper server-side parsing, physics-aware scoring
+// Pythia Scan Engine - Complete Working Version
+// Physics-aware scoring, no rate limiting, proper server-side parsing
 
 export async function onRequest(context) {
   const corsHeaders = {
@@ -21,7 +21,7 @@ export async function onRequest(context) {
   }
 
   try {
-    const { url } = await context.request.json();
+    const { url, sector } = await context.request.json();
     
     if (!url) {
       return new Response(JSON.stringify({ error: 'URL required' }), {
@@ -30,7 +30,8 @@ export async function onRequest(context) {
       });
     }
 
-    const hostname = new URL(url).hostname.replace('www.', '');
+    const fullUrl = url.startsWith('http') ? url : `https://${url}`;
+    const hostname = new URL(fullUrl).hostname.replace('www.', '');
     const timestamp = new Date().toISOString();
     
     // ============================================================================
@@ -61,18 +62,19 @@ export async function onRequest(context) {
     }
     
     // ============================================================================
-    // STEP 2: HTTP FETCH (with realistic user agent)
+    // STEP 2: HTTP FETCH
     // ============================================================================
     let html = '';
     let responseHeaders = new Headers();
     let loadTime = 0;
     let ttfb = 0;
     let scanMethod = 'fetch';
+    let finalUrl = fullUrl;
     
     const fetchStart = Date.now();
     
     try {
-      const response = await fetch(url, {
+      const response = await fetch(fullUrl, {
         method: 'GET',
         redirect: 'follow',
         headers: {
@@ -89,15 +91,16 @@ export async function onRequest(context) {
       
       ttfb = Date.now() - fetchStart;
       responseHeaders = response.headers;
+      finalUrl = response.url;
       html = await response.text();
       loadTime = Date.now() - fetchStart;
       
-      if (!response.ok) {
+      if (!response.ok && response.status !== 403 && response.status !== 429) {
         throw new Error(`HTTP ${response.status}`);
       }
       
     } catch (fetchError) {
-      // If fetch fails, try browser rendering if available
+      // Try browser rendering if available
       if (context.env.MYBROWSER) {
         try {
           scanMethod = 'browser';
@@ -110,9 +113,10 @@ export async function onRequest(context) {
           await page.setViewport({ width: 1920, height: 1080 });
           await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
           
-          await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+          await page.goto(fullUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
           
           html = await page.content();
+          finalUrl = page.url();
           ttfb = Date.now() - browserStart;
           loadTime = ttfb;
           
@@ -143,29 +147,32 @@ export async function onRequest(context) {
     }
     
     // ============================================================================
-    // STEP 3: ANALYZE HTML (server-side compatible)
+    // STEP 3: ANALYZE HTML (Server-Side Compatible)
     // ============================================================================
     
-    // Simple regex-based analysis (no DOMParser needed)
     const analysis = {
+      // Meta tags
       hasViewport: /<meta[^>]*name=["']viewport["']/i.test(html),
       hasDescription: /<meta[^>]*name=["']description["']/i.test(html),
       hasTitle: /<title[^>]*>([^<]+)<\/title>/i.test(html),
+      titleMatch: html.match(/<title[^>]*>([^<]+)<\/title>/i),
       hasH1: /<h1[^>]*>/i.test(html),
       hasStructuredData: /<script[^>]*type=["']application\/ld\+json["']/i.test(html),
       hasCanonical: /<link[^>]*rel=["']canonical["']/i.test(html),
-      hasOpenGraph: /<meta[^>]*property=["']og:/i.test(html),
       
-      // Count resources
+      // Open Graph
+      ogTags: (html.match(/<meta[^>]*property=["']og:/gi) || []).length,
+      
+      // Resources
       scriptCount: (html.match(/<script[^>]*>/gi) || []).length,
       cssCount: (html.match(/<link[^>]*rel=["']stylesheet["']/gi) || []).length,
       imgCount: (html.match(/<img[^>]*>/gi) || []).length,
       
-      // Detect blocking resources
-      blockingScripts: (html.match(/<script(?![^>]*(?:async|defer))[^>]*>/gi) || []).length,
+      // Blocking resources
+      blockingScripts: (html.match(/<script(?![^>]*(?:async|defer))[^>]*src=/gi) || []).length,
       blockingCSS: (html.match(/<link[^>]*rel=["']stylesheet["'](?![^>]*media=["']print["'])[^>]*>/gi) || []).length,
       
-      // Modern tech
+      // Modern features
       hasWebP: /\.webp["']/i.test(html),
       hasAVIF: /\.avif["']/i.test(html),
       hasLazyLoading: /loading=["']lazy["']/i.test(html),
@@ -176,173 +183,243 @@ export async function onRequest(context) {
       hasLang: /<html[^>]*lang=/i.test(html),
       
       // Security
-      hasHTTPS: url.startsWith('https://'),
+      hasHTTPS: fullUrl.startsWith('https://'),
       
       // Third-party
       hasGoogleAnalytics: /google-analytics\.com|googletagmanager\.com/i.test(html),
       hasFacebookPixel: /facebook\.com\/tr\?id=/i.test(html),
       
+      // Size
       contentLength: html.length,
+      sizeMB: html.length / (1024 * 1024),
+      
+      // Total resources
       resourceCount: (html.match(/<script[^>]*>/gi) || []).length + 
                      (html.match(/<link[^>]*>/gi) || []).length +
                      (html.match(/<img[^>]*>/gi) || []).length
     };
     
+    // Title analysis
+    const titleLength = analysis.titleMatch ? analysis.titleMatch[1].length : 0;
+    
     // ============================================================================
-    // STEP 4: PHYSICS-AWARE SCORING
+    // STEP 4: CALCULATE SCORES
     // ============================================================================
     
-    // Separate network latency (TTFB) from rendering time
+    const result = {};
+    
+    // 1. KARPOV: Speed (20% weight) - Physics-Aware
     const renderingTime = loadTime - ttfb;
     
-    // KARPOV: Speed (30% weight) - Physics-aware
-    let karpovScore = 85; // Baseline
+    // Classify TTFB (network infrastructure - not developer-controlled)
+    let ttfbCategory = 'poor';
+    let ttfbScore = 50;
     
-    // Score TTFB (network infrastructure)
-    if (ttfb > 800) karpovScore -= 18;
-    else if (ttfb > 600) karpovScore -= 12;
-    else if (ttfb > 400) karpovScore -= 8;
-    else if (ttfb > 200) karpovScore -= 4;
-    else if (ttfb < 100) karpovScore += 5; // Bonus for CDN
+    if (ttfb < 200) {
+      ttfbCategory = 'excellent';
+      ttfbScore = 100;
+    } else if (ttfb < 400) {
+      ttfbCategory = 'good';
+      ttfbScore = 85;
+    } else if (ttfb < 600) {
+      ttfbCategory = 'acceptable';
+      ttfbScore = 70;
+    } else if (ttfb < 800) {
+      ttfbCategory = 'slow';
+      ttfbScore = 55;
+    }
     
-    // Score rendering time (controllable by developer)
-    const baselineRender = 800; // Optimal render time
-    if (renderingTime > 5000) karpovScore -= 25;
-    else if (renderingTime > 4000) karpovScore -= 18;
-    else if (renderingTime > 3000) karpovScore -= 12;
-    else if (renderingTime > 2000) karpovScore -= 8;
-    else if (renderingTime > 1500) karpovScore -= 4;
-    else if (renderingTime < 1000) karpovScore += 8; // Bonus
+    // Adjust rendering time for blocking resources
+    let adjustedRenderTime = renderingTime;
+    adjustedRenderTime += (analysis.blockingScripts * 100);
+    adjustedRenderTime += (analysis.blockingCSS * 50);
     
-    // Penalties for blocking resources
-    karpovScore -= Math.min(15, analysis.blockingScripts * 2.5);
-    karpovScore -= Math.min(12, analysis.blockingCSS * 3.5);
+    // Score rendering (developer-controlled)
+    const RENDER_OPTIMAL = scanMethod === 'browser' ? 1500 : 800;
+    const RENDER_ACCEPTABLE = scanMethod === 'browser' ? 3500 : 2000;
+    const RENDER_POOR = scanMethod === 'browser' ? 6000 : 4000;
     
-    // Resource count penalty
-    if (analysis.resourceCount > 150) karpovScore -= 12;
-    else if (analysis.resourceCount > 100) karpovScore -= 8;
-    else if (analysis.resourceCount > 75) karpovScore -= 2;
-    else if (analysis.resourceCount < 20) karpovScore += 3;
+    let renderScore = 100;
+    if (adjustedRenderTime <= RENDER_OPTIMAL) {
+      renderScore = 100;
+    } else if (adjustedRenderTime <= RENDER_ACCEPTABLE) {
+      renderScore = 100 - ((adjustedRenderTime - RENDER_OPTIMAL) / (RENDER_ACCEPTABLE - RENDER_OPTIMAL)) * 40;
+    } else if (adjustedRenderTime <= RENDER_POOR) {
+      renderScore = 60 - ((adjustedRenderTime - RENDER_ACCEPTABLE) / (RENDER_POOR - RENDER_ACCEPTABLE)) * 40;
+    } else {
+      renderScore = Math.max(0, 20 - ((adjustedRenderTime - RENDER_POOR) / 1000) * 2);
+    }
     
-    karpovScore = Math.max(0, Math.min(100, karpovScore));
+    // Composite: 70% rendering (controllable) + 30% network (infrastructure)
+    result.karpov = Math.round(Math.max(0, Math.min(100, (renderScore * 0.70) + (ttfbScore * 0.30))));
     
-    // TYCHE: Interactivity (18% weight)
-    let tycheScore = 80;
+    // 2. TYCHE: Interactivity (18% weight)
     const thirdPartyScripts = (html.match(/google-analytics|googletagmanager|facebook\.com|doubleclick/gi) || []).length;
+    
+    let tycheScore = 80;
     tycheScore -= Math.min(20, thirdPartyScripts * 4);
     tycheScore -= Math.min(15, analysis.blockingScripts * 3);
-    tycheScore = Math.max(0, Math.min(100, tycheScore));
+    result.tyche = Math.round(Math.max(0, Math.min(100, tycheScore)));
     
-    // PULSE: SEO (12% weight)
-    let pulseScore = 50;
-    if (analysis.hasTitle) pulseScore += 10;
-    if (analysis.hasDescription) pulseScore += 10;
-    if (analysis.hasH1) pulseScore += 8;
-    if (analysis.hasStructuredData) pulseScore += 8;
-    if (analysis.hasCanonical) pulseScore += 6;
-    if (analysis.hasOpenGraph) pulseScore += 6;
-    if (karpovScore >= 70) pulseScore += 2; // Core Web Vitals bonus
-    pulseScore = Math.max(0, Math.min(100, pulseScore));
+    // 3. VORTEX: Accessibility (20% weight)
+    let vortexScore = 0;
+    if (analysis.hasAlt) vortexScore += 25;
+    if (analysis.hasAriaLabels) vortexScore += 25;
+    if (analysis.hasLang) vortexScore += 20;
+    if (analysis.hasH1) vortexScore += 15;
+    if (analysis.hasTitle) vortexScore += 15;
+    result.vortex = Math.round(Math.max(0, Math.min(100, vortexScore)));
     
-    // NEXUS: Mobile (12% weight)
-    let nexusScore = 50;
-    if (analysis.hasViewport) nexusScore += 20;
-    if (analysis.imgCount > 0 && analysis.hasAlt) nexusScore += 15;
-    if (analysis.hasLazyLoading) nexusScore += 10;
-    if (loadTime < 3000) nexusScore += 5; // Mobile speed
-    nexusScore = Math.max(0, Math.min(100, nexusScore));
+    // 4. NEXUS: Mobile (10% weight)
+    let nexusScore = 0;
+    if (analysis.hasViewport) nexusScore += 40;
+    if (analysis.imgCount > 0 && analysis.hasAlt) nexusScore += 20;
+    if (analysis.hasLazyLoading) nexusScore += 20;
+    if (loadTime < 3000) nexusScore += 20;
+    result.nexus = Math.round(Math.max(0, Math.min(100, nexusScore)));
     
-    // VORTEX: Accessibility (8% weight)
-    let vortexScore = 50;
-    if (analysis.hasAlt) vortexScore += 15;
-    if (analysis.hasAriaLabels) vortexScore += 15;
-    if (analysis.hasLang) vortexScore += 10;
-    if (analysis.hasH1) vortexScore += 10;
-    vortexScore = Math.max(0, Math.min(100, vortexScore));
-    
-    // NOVA: Scalability (7% weight)
-    let novaScore = 70;
-    if (analysis.contentLength > 500000) novaScore -= 20;
-    else if (analysis.contentLength > 200000) novaScore -= 10;
-    if (analysis.resourceCount > 100) novaScore -= 10;
-    novaScore = Math.max(0, Math.min(100, novaScore));
-    
-    // HELIX: Privacy (6% weight)
+    // 5. HELIX: Privacy (15% weight)
     let helixScore = 60;
     if (analysis.hasHTTPS) helixScore += 20;
     if (!analysis.hasGoogleAnalytics) helixScore += 10;
     if (!analysis.hasFacebookPixel) helixScore += 10;
-    helixScore = Math.max(0, Math.min(100, helixScore));
+    result.helix = Math.round(Math.max(0, Math.min(100, helixScore)));
     
-    // EDEN: Efficiency (4% weight)
-    let edenScore = 60;
-    if (analysis.hasWebP || analysis.hasAVIF) edenScore += 20;
-    if (analysis.hasLazyLoading) edenScore += 10;
-    if (analysis.contentLength < 100000) edenScore += 10;
-    edenScore = Math.max(0, Math.min(100, edenScore));
+    // 6. PULSE: SEO (15% weight)
+    let pulseScore = 0;
+    if (analysis.hasTitle) pulseScore += 20;
+    if (titleLength >= 30 && titleLength <= 60) pulseScore += 15;
+    if (analysis.hasDescription) pulseScore += 20;
+    if (analysis.hasStructuredData) pulseScore += 15;
+    if (analysis.hasCanonical) pulseScore += 10;
+    if (analysis.ogTags >= 4) pulseScore += 10;
+    if (result.karpov >= 70) pulseScore += 10; // Core Web Vitals bonus
+    result.pulse = Math.round(Math.max(0, Math.min(100, pulseScore)));
     
-    // AETHER: Modern Tech (2% weight)
-    let aetherScore = 20;
-    if (analysis.hasWebP) aetherScore += 30;
+    // 7. NOVA: CDN & Caching (7% weight)
+    const isCDN = responseHeaders.get('cf-ray') || responseHeaders.get('x-cache') || responseHeaders.get('x-amz-cf-id');
+    const hasCache = responseHeaders.get('cache-control');
+    const compression = responseHeaders.get('content-encoding');
+    
+    let novaScore = 0;
+    if (isCDN) novaScore += 40;
+    if (hasCache) novaScore += 30;
+    if (compression === 'br') novaScore += 30;
+    else if (compression === 'gzip') novaScore += 20;
+    result.nova = Math.round(Math.max(0, Math.min(100, novaScore)));
+    
+    // 8. EDEN: Page Weight (7% weight)
+    let edenScore = 100;
+    if (analysis.sizeMB > 5) {
+      edenScore = Math.max(20, 100 - ((analysis.sizeMB - 5) * 10));
+    } else if (analysis.sizeMB > 3) {
+      edenScore = 85 - ((analysis.sizeMB - 3) * 7.5);
+    } else if (analysis.sizeMB > 1) {
+      edenScore = 95 - ((analysis.sizeMB - 1) * 5);
+    }
+    result.eden = Math.round(Math.max(0, Math.min(100, edenScore)));
+    
+    // 9. AETHER: Modern Tech (3% weight)
+    let aetherScore = 0;
+    if (analysis.hasWebP) aetherScore += 40;
     if (analysis.hasAVIF) aetherScore += 30;
-    if (analysis.hasLazyLoading) aetherScore += 20;
-    aetherScore = Math.max(0, Math.min(100, aetherScore));
+    if (analysis.hasLazyLoading) aetherScore += 30;
+    result.aether = Math.round(Math.max(0, Math.min(100, aetherScore)));
     
-    // QUANTUM: Code Quality (1% weight)
+    // 10. QUANTUM: Code Quality (2% weight)
     let quantumScore = 70;
     if (analysis.blockingScripts === 0) quantumScore += 15;
     if (analysis.blockingCSS === 0) quantumScore += 15;
-    quantumScore = Math.max(0, Math.min(100, quantumScore));
+    result.quantum = Math.round(Math.max(0, Math.min(100, quantumScore)));
     
-    // Calculate overall P-Score
+    // ============================================================================
+    // STEP 5: CALCULATE P-SCORE
+    // ============================================================================
+    
     const pscore = Math.round(
-      karpovScore * 0.30 +
-      tycheScore * 0.18 +
-      pulseScore * 0.12 +
-      nexusScore * 0.12 +
-      vortexScore * 0.08 +
-      novaScore * 0.07 +
-      helixScore * 0.06 +
-      edenScore * 0.04 +
-      aetherScore * 0.02 +
-      quantumScore * 0.01
+      result.karpov * 0.20 +
+      result.tyche * 0.18 +
+      result.vortex * 0.20 +
+      result.nexus * 0.10 +
+      result.helix * 0.15 +
+      result.pulse * 0.15 +
+      result.nova * 0.07 +
+      result.eden * 0.07 +
+      result.aether * 0.03 +
+      result.quantum * 0.02
     );
     
-    // Build response
-    const result = {
+    // ============================================================================
+    // STEP 6: BUILD RESPONSE
+    // ============================================================================
+    
+    const finalResult = {
       pscore,
       hostname,
-      url,
+      url: finalUrl,
       timestamp,
       scanMethod,
       data: {
         karpov: { 
-          score: karpovScore,
+          score: result.karpov,
           ttfb,
+          ttfbCategory,
           renderTime: renderingTime,
+          adjustedRenderTime,
           loadTime,
           blockingScripts: analysis.blockingScripts,
-          blockingCSS: analysis.blockingCSS,
-          resourceCount: analysis.resourceCount
+          blockingCSS: analysis.blockingCSS
         },
-        tyche: { score: tycheScore, thirdPartyScripts },
-        pulse: { 
-          score: pulseScore,
-          hasTitle: analysis.hasTitle,
-          hasDescription: analysis.hasDescription,
-          hasStructuredData: analysis.hasStructuredData
+        tyche: { 
+          score: result.tyche,
+          thirdPartyScripts,
+          blockingScripts: analysis.blockingScripts
         },
-        nexus: { 
-          score: nexusScore,
+        vortex: {
+          score: result.vortex,
+          hasAlt: analysis.hasAlt,
+          hasAriaLabels: analysis.hasAriaLabels,
+          hasLang: analysis.hasLang
+        },
+        nexus: {
+          score: result.nexus,
           hasViewport: analysis.hasViewport,
           hasLazyLoading: analysis.hasLazyLoading
         },
-        vortex: { score: vortexScore },
-        nova: { score: novaScore },
-        helix: { score: helixScore, hasHTTPS: analysis.hasHTTPS },
-        eden: { score: edenScore },
-        aether: { score: aetherScore },
-        quantum: { score: quantumScore }
+        helix: {
+          score: result.helix,
+          hasHTTPS: analysis.hasHTTPS,
+          hasTracking: analysis.hasGoogleAnalytics || analysis.hasFacebookPixel
+        },
+        pulse: {
+          score: result.pulse,
+          hasTitle: analysis.hasTitle,
+          titleLength,
+          hasDescription: analysis.hasDescription,
+          hasStructuredData: analysis.hasStructuredData,
+          ogTags: analysis.ogTags
+        },
+        nova: {
+          score: result.nova,
+          isCDN: !!isCDN,
+          hasCache: !!hasCache,
+          compression
+        },
+        eden: {
+          score: result.eden,
+          sizeMB: Math.round(analysis.sizeMB * 100) / 100
+        },
+        aether: {
+          score: result.aether,
+          hasWebP: analysis.hasWebP,
+          hasAVIF: analysis.hasAVIF,
+          hasLazyLoading: analysis.hasLazyLoading
+        },
+        quantum: {
+          score: result.quantum,
+          blockingScripts: analysis.blockingScripts,
+          blockingCSS: analysis.blockingCSS
+        }
       }
     };
     
@@ -351,19 +428,20 @@ export async function onRequest(context) {
       try {
         await context.env.DB.prepare(`
           INSERT OR REPLACE INTO precomputed_scores 
-          (hostname, score_data, scan_method, last_updated)
-          VALUES (?, ?, ?, datetime('now'))
+          (hostname, score_data, scan_method, sector, last_updated)
+          VALUES (?, ?, ?, ?, datetime('now'))
         `).bind(
           hostname,
-          JSON.stringify(result),
-          scanMethod
+          JSON.stringify(finalResult),
+          scanMethod,
+          sector || 'other'
         ).run();
       } catch (e) {
         console.error('D1 cache failed:', e);
       }
     }
     
-    return new Response(JSON.stringify(result), {
+    return new Response(JSON.stringify(finalResult), {
       status: 200,
       headers: corsHeaders
     });
