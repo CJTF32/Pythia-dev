@@ -589,11 +589,85 @@ export async function onRequest(context) {
     const finalPscore = Math.round(clamp(pscore) * 10) / 10;
     
     // ============================================================================
+    // M-SCORE CALCULATION (Revenue-Weighted)
+    // ============================================================================
+    // M-Score represents "% of revenue potential being realized"
+    // Based on proven revenue correlations from Amazon, Walmart, Google research
+    
+    // Revenue-impact weights (sum to 100%)
+    // These differ from P-Score because they emphasize revenue-critical factors
+    const mScore = 
+      result.karpov * 0.45 +    // Speed: Strongest revenue correlation (1% per 100ms)
+      result.nexus * 0.25 +     // Mobile: 50%+ of traffic, direct conversion impact
+      result.pulse * 0.15 +     // SEO: Search users convert 2-6x better
+      result.tyche * 0.05 +     // Interactivity: Moderate impact on bounce
+      result.vortex * 0.03 +    // Accessibility: Market expansion (ADA compliance)
+      result.helix * 0.02 +     // Privacy: Trust factor, indirect impact
+      result.nova * 0.02 +      // CDN: Enables speed (derivative factor)
+      result.eden * 0.01 +      // Weight: Correlates with speed
+      result.aether * 0.01 +    // Modern: Efficiency gains
+      result.quantum * 0.01;    // Code: Maintainability (indirect)
+      // Echo (Sustainability) has 0% weight in M-Score (no proven revenue correlation)
+    
+    // Apply conservative penalty factor
+    // Revenue loss compounds (slow site → high bounce → bad SEO → less traffic)
+    const finalMscore = Math.round(clamp(mScore * 0.95) * 10) / 10;
+    
+    // Calculate Moody's grade from M-Score
+    function getMoodyGrade(mscore) {
+      if (mscore >= 95) return { grade: 'AAA', description: 'Exceptional', risk: 'Minimal' };
+      if (mscore >= 90) return { grade: 'AA', description: 'Excellent', risk: 'Very Low' };
+      if (mscore >= 85) return { grade: 'A', description: 'Strong', risk: 'Low' };
+      if (mscore >= 80) return { grade: 'BBB', description: 'Good', risk: 'Moderate' };
+      if (mscore >= 75) return { grade: 'BB', description: 'Fair', risk: 'Notable' };
+      if (mscore >= 70) return { grade: 'B', description: 'Weak', risk: 'Significant' };
+      if (mscore >= 65) return { grade: 'CCC', description: 'Poor', risk: 'High' };
+      if (mscore >= 60) return { grade: 'CC', description: 'Very Poor', risk: 'Very High' };
+      return { grade: 'C', description: 'Critical', risk: 'Severe' };
+    }
+    
+    const moodyRating = getMoodyGrade(finalMscore);
+    const revenueRealization = Math.round(finalMscore);
+    const estimatedRevenueLoss = 100 - revenueRealization;
+    
+    // Generate executive summary
+    function getRevenueSummary(mscore, loss, grade) {
+      if (mscore >= 95) {
+        return `Exceptional digital performance. You're capturing ~${Math.round(mscore)}% of potential revenue with minimal optimization opportunities.`;
+      } else if (mscore >= 90) {
+        return `Excellent performance. Minor optimizations could unlock the remaining ~${loss}% revenue potential.`;
+      } else if (mscore >= 85) {
+        return `Strong performance. Speed and mobile improvements could capture ~${loss}% more revenue.`;
+      } else if (mscore >= 80) {
+        return `Good baseline, but you're likely losing ~${loss}% of potential revenue to performance issues.`;
+      } else if (mscore >= 75) {
+        return `Fair performance. Performance issues are costing an estimated ${loss}% in lost conversions.`;
+      } else if (mscore >= 70) {
+        return `Below average performance. Critical issues blocking ~${loss}% of revenue potential.`;
+      } else if (mscore >= 65) {
+        return `Poor performance. Severe issues causing ~${loss}% revenue loss. Immediate action required.`;
+      } else if (mscore >= 60) {
+        return `Critical performance issues. You're realizing only ~${Math.round(mscore)}% of digital revenue potential.`;
+      } else {
+        return `Severe problems blocking majority of revenue. Estimated ${loss}%+ revenue loss requires urgent intervention.`;
+      }
+    }
+    
+    const revenueSummary = getRevenueSummary(finalMscore, estimatedRevenueLoss, moodyRating.grade);
+    
+    // ============================================================================
     // STEP 6: BUILD RESPONSE (with detailed data)
     // ============================================================================
     
     const finalResult = {
       pscore: finalPscore,
+      mscore: finalMscore,
+      moodyGrade: moodyRating.grade,
+      moodyDescription: moodyRating.description,
+      moodyRisk: moodyRating.risk,
+      revenueRealization: revenueRealization,
+      estimatedRevenueLoss: estimatedRevenueLoss,
+      revenueSummary: revenueSummary,
       hostname,
       url: finalUrl,
       timestamp,
