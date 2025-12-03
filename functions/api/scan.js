@@ -1,5 +1,5 @@
-// Dynamic import to avoid bundling issues
-// Puppeteer is provided by Cloudflare at runtime
+// Pythia Scan Engine - Working Version for Benchmark Dataset
+// No rate limiting, proper server-side parsing, physics-aware scoring
 
 export async function onRequest(context) {
   const corsHeaders = {
@@ -21,9 +21,6 @@ export async function onRequest(context) {
   }
 
   try {
-    // ============================================================================
-    // STEP 1: INPUT PARSING
-    // ============================================================================
     const { url } = await context.request.json();
     
     if (!url) {
@@ -33,27 +30,26 @@ export async function onRequest(context) {
       });
     }
 
-    const result = { url, timestamp: new Date().toISOString() };
-    
-    // ============================================================================
-    // STEP 2: CHECK PRE-COMPUTED SCORES (TIER 1 - D1 DATABASE)
-    // ============================================================================
     const hostname = new URL(url).hostname.replace('www.', '');
+    const timestamp = new Date().toISOString();
     
-    // Check D1 database for pre-computed scores
+    // ============================================================================
+    // STEP 1: CHECK D1 CACHE (24 hour TTL)
+    // ============================================================================
     if (context.env.DB) {
       try {
-        const precomputed = await context.env.DB.prepare(
-          'SELECT * FROM precomputed_scores WHERE hostname = ?'
+        const cached = await context.env.DB.prepare(
+          `SELECT * FROM precomputed_scores 
+           WHERE hostname = ?
+           AND datetime(last_updated) > datetime('now', '-24 hours')`
         ).bind(hostname).first();
         
-        if (precomputed) {
-          console.log(`✅ Using pre-computed score for ${hostname}`);
+        if (cached) {
+          const scoreData = JSON.parse(cached.score_data);
           return new Response(JSON.stringify({
-            ...JSON.parse(precomputed.score_data),
-            precomputed: true,
-            last_updated: precomputed.last_updated,
-            scan_method: precomputed.scan_method
+            ...scoreData,
+            cached: true,
+            cacheAge: cached.last_updated
           }), {
             status: 200,
             headers: corsHeaders
@@ -61,448 +57,322 @@ export async function onRequest(context) {
         }
       } catch (e) {
         console.error('D1 lookup failed:', e);
-        // Continue with live scan
       }
     }
     
     // ============================================================================
-    // STEP 3: FETCH WEBSITE DATA (TIER 2 - SIMPLE HTTP FETCH)
+    // STEP 2: HTTP FETCH (with realistic user agent)
     // ============================================================================
-    
     let html = '';
-    let siteHeaders = new Headers();
-    let contentLength = 0;
+    let responseHeaders = new Headers();
     let loadTime = 0;
-    let finalUrl = url;
     let ttfb = 0;
-    let usedBrowser = false;
-
+    let scanMethod = 'fetch';
+    
+    const fetchStart = Date.now();
+    
     try {
-      const fetchStart = Date.now();
+      const response = await fetch(url, {
+        method: 'GET',
+        redirect: 'follow',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'DNT': '1',
+          'Connection': 'keep-alive',
+          'Upgrade-Insecure-Requests': '1'
+        },
+        signal: AbortSignal.timeout(10000)
+      });
       
-      // Try simple fetch first (faster, cheaper)
-      let response;
-      try {
-        response = await fetch(url, {
-          method: 'GET',
-          redirect: 'follow',
-          headers: { 
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
-          },
-          signal: AbortSignal.timeout(5000) // 5 second timeout
-        });
-
-        ttfb = Date.now() - fetchStart;
-
-        // If we get blocked (403, 429) or bad response, try browser
-        if (!response.ok || response.status === 403 || response.status === 429) {
-          throw new Error(`HTTP ${response.status} - will try browser rendering`);
-        }
-        
-        html = await response.text();
-        siteHeaders = response.headers;
-        contentLength = parseInt(siteHeaders.get('content-length') || '0');
-        loadTime = Date.now() - fetchStart;
-        finalUrl = response.url;
-        
-        console.log(`✅ HTTP fetch successful for ${hostname} in ${loadTime}ms`);
-        
-      } catch (fetchError) {
-        console.log(`⚠️ HTTP fetch failed for ${hostname}: ${fetchError.message}`);
-        console.log('🔄 Attempting browser rendering...');
-        
-        // ============================================================================
-        // STEP 4: BROWSER RENDERING (TIER 3 - PUPPETEER)
-        // ============================================================================
-        if (context.env.MYBROWSER) {
-          try {
-            // Dynamic import of puppeteer (avoids bundling issues)
-            const { default: puppeteer } = await import('@cloudflare/puppeteer');
-            
-            const browserStart = Date.now();
-            const browser = await puppeteer.launch(context.env.MYBROWSER);
-            const page = await browser.newPage();
-            
-            // Set viewport and user agent
-            await page.setViewport({ width: 1920, height: 1080 });
-            await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36');
-            
-            // Navigate with timeout
-            await page.goto(url, { 
-              waitUntil: 'networkidle2',
-              timeout: 10000
-            });
-            
-            loadTime = Date.now() - browserStart;
-            html = await page.content();
-            finalUrl = page.url();
-            usedBrowser = true;
-            
-            await browser.close();
-            
-            console.log(`✅ Browser rendering successful for ${hostname} in ${loadTime}ms`);
-            
-          } catch (browserError) {
-            console.error(`❌ Browser rendering failed for ${hostname}:`, browserError);
-            throw new Error(`Failed to scan ${hostname}: ${browserError.message}`);
-          }
-        } else {
-          throw new Error('Browser rendering not available');
-        }
+      ttfb = Date.now() - fetchStart;
+      responseHeaders = response.headers;
+      html = await response.text();
+      loadTime = Date.now() - fetchStart;
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
       
-    } catch (error) {
-      console.error('Scan error:', error);
-      return new Response(JSON.stringify({ 
-        error: `Failed to scan ${hostname}: ${error.message}` 
-      }), {
-        status: 500,
-        headers: corsHeaders
-      });
-    }
-
-    // ============================================================================
-    // STEP 5: PARSE HTML & EXTRACT METRICS (REGEX-BASED FOR CLOUDFLARE WORKERS)
-    // ============================================================================
-    
-    // Count resources using regex (DOMParser not available in Workers)
-    const scriptMatches = html.match(/<script[\s\S]*?<\/script>/gi) || [];
-    const scripts = scriptMatches.length;
-    const inlineScripts = scriptMatches.filter(s => !s.match(/src\s*=\s*["']/i)).length;
-    const externalScripts = scripts - inlineScripts;
-    
-    const scriptSrcMatches = html.match(/<script[^>]+src\s*=\s*["']([^"']+)["']/gi) || [];
-    const thirdPartyScripts = scriptSrcMatches.filter(s => {
-      const srcMatch = s.match(/src\s*=\s*["']([^"']+)["']/i);
-      return srcMatch && !srcMatch[1].includes(hostname);
-    }).length;
-    
-    const imgMatches = html.match(/<img[^>]*>/gi) || [];
-    const images = imgMatches.length;
-    const imagesWithAlt = imgMatches.filter(img => img.match(/alt\s*=\s*["'][^"']*["']/i)).length;
-    
-    const stylesheets = (html.match(/<link[^>]+rel\s*=\s*["']stylesheet["'][^>]*>/gi) || []).length;
-    const inlineStyles = (html.match(/<style[\s\S]*?<\/style>/gi) || []).length;
-    
-    // Check for modern features
-    const hasViewport = /<meta[^>]+name\s*=\s*["']viewport["']/i.test(html);
-    const viewportMatch = html.match(/<meta[^>]+name\s*=\s*["']viewport["'][^>]+content\s*=\s*["']([^"']+)["']/i);
-    const viewportContent = viewportMatch ? viewportMatch[1] : '';
-    const viewportProperlyConfigured = viewportContent.includes('width=device-width');
-    
-    const hasManifest = /<link[^>]+rel\s*=\s*["']manifest["']/i.test(html);
-    const hasModules = /<script[^>]+type\s*=\s*["']module["']/i.test(html);
-    
-    // SEO elements
-    const hasTitle = /<title>/i.test(html);
-    const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
-    const titleLength = titleMatch ? titleMatch[1].length : 0;
-    const ogTags = (html.match(/<meta[^>]+property\s*=\s*["']og:/gi) || []).length;
-    const hasDescription = /<meta[^>]+name\s*=\s*["']description["']/i.test(html);
-    
-    // Security headers
-    const hasHSTS = siteHeaders.has('strict-transport-security');
-    const hasCSP = siteHeaders.has('content-security-policy');
-    const hasXFrame = siteHeaders.has('x-frame-options');
-    
-    // Estimate trackers (basic heuristic)
-    const trackerDomains = ['google-analytics', 'gtag', 'facebook', 'doubleclick', 'analytics', 'tracker'];
-    const trackerCount = scriptSrcMatches.filter(s => 
-      trackerDomains.some(t => s.toLowerCase().includes(t))
-    ).length;
-    
-    // Check for CDN
-    const cdnDomains = ['cloudflare', 'cloudfront', 'fastly', 'akamai', 'cdn'];
-    const allResources = [...scriptSrcMatches, ...(html.match(/<link[^>]+href\s*=\s*["']([^"']+)["']/gi) || [])];
-    const isCDN = cdnDomains.some(cdn => 
-      finalUrl.includes(cdn) || allResources.some(r => r.toLowerCase().includes(cdn))
-    );
-    
-    // Check caching
-    const cacheControl = siteHeaders.get('cache-control') || '';
-    const hasCache = cacheControl.includes('max-age') || cacheControl.includes('public');
-    
-    // Check compression
-    const contentEncoding = siteHeaders.get('content-encoding') || '';
-    const compression = contentEncoding.includes('br') ? 'br' : 
-                       contentEncoding.includes('gzip') ? 'gzip' : 'none';
-    
-    // Estimate page size
-    const sizeMB = contentLength ? (contentLength / 1024 / 1024) : (html.length / 1024 / 1024);
-    
-    // Total resources
-    const resourceCount = scripts + images + stylesheets;
-    
-    // Console errors (simulated - can't get real errors from HTTP fetch)
-    const consoleErrors = 0;
-
-    // ============================================================================
-    // STEP 6: CALCULATE COMPONENT SCORES (PHYSICS-AWARE)
-    // ============================================================================
-    
-    // PHYSICS BASELINE: 200ms minimum due to network latency
-    const PHYSICS_BASELINE = 200;
-    const adjustedLoadTime = Math.max(0, loadTime - PHYSICS_BASELINE);
-    
-    // 1. KARPOV - Load Time Performance (25% weight)
-    // Progressive penalty curve: 0-1s = excellent, 1-3s = good, 3-5s = fair, 5s+ = poor
-    let karpovScore = 100;
-    if (adjustedLoadTime < 1000) {
-      karpovScore = 100;
-    } else if (adjustedLoadTime < 3000) {
-      karpovScore = 90 - ((adjustedLoadTime - 1000) / 2000 * 20); // 90-70
-    } else if (adjustedLoadTime < 5000) {
-      karpovScore = 70 - ((adjustedLoadTime - 3000) / 2000 * 20); // 70-50
-    } else {
-      karpovScore = Math.max(20, 50 - ((adjustedLoadTime - 5000) / 1000 * 5)); // 50-20
+    } catch (fetchError) {
+      // If fetch fails, try browser rendering if available
+      if (context.env.MYBROWSER) {
+        try {
+          scanMethod = 'browser';
+          const { default: puppeteer } = await import('@cloudflare/puppeteer');
+          
+          const browserStart = Date.now();
+          const browser = await puppeteer.launch(context.env.MYBROWSER);
+          const page = await browser.newPage();
+          
+          await page.setViewport({ width: 1920, height: 1080 });
+          await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+          
+          await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+          
+          html = await page.content();
+          ttfb = Date.now() - browserStart;
+          loadTime = ttfb;
+          
+          await browser.close();
+          
+        } catch (browserError) {
+          return new Response(JSON.stringify({
+            error: 'Scan failed',
+            details: 'Site blocked automated scanning',
+            hostname,
+            timestamp
+          }), {
+            status: 503,
+            headers: corsHeaders
+          });
+        }
+      } else {
+        return new Response(JSON.stringify({
+          error: 'Scan failed',
+          details: fetchError.message,
+          hostname,
+          timestamp
+        }), {
+          status: 503,
+          headers: corsHeaders
+        });
+      }
     }
     
-    // TTFB penalty
-    const ttfbPenalty = Math.min(20, Math.max(0, (ttfb - 500) / 100 * 5));
-    karpovScore = Math.max(0, karpovScore - ttfbPenalty);
+    // ============================================================================
+    // STEP 3: ANALYZE HTML (server-side compatible)
+    // ============================================================================
+    
+    // Simple regex-based analysis (no DOMParser needed)
+    const analysis = {
+      hasViewport: /<meta[^>]*name=["']viewport["']/i.test(html),
+      hasDescription: /<meta[^>]*name=["']description["']/i.test(html),
+      hasTitle: /<title[^>]*>([^<]+)<\/title>/i.test(html),
+      hasH1: /<h1[^>]*>/i.test(html),
+      hasStructuredData: /<script[^>]*type=["']application\/ld\+json["']/i.test(html),
+      hasCanonical: /<link[^>]*rel=["']canonical["']/i.test(html),
+      hasOpenGraph: /<meta[^>]*property=["']og:/i.test(html),
+      
+      // Count resources
+      scriptCount: (html.match(/<script[^>]*>/gi) || []).length,
+      cssCount: (html.match(/<link[^>]*rel=["']stylesheet["']/gi) || []).length,
+      imgCount: (html.match(/<img[^>]*>/gi) || []).length,
+      
+      // Detect blocking resources
+      blockingScripts: (html.match(/<script(?![^>]*(?:async|defer))[^>]*>/gi) || []).length,
+      blockingCSS: (html.match(/<link[^>]*rel=["']stylesheet["'](?![^>]*media=["']print["'])[^>]*>/gi) || []).length,
+      
+      // Modern tech
+      hasWebP: /\.webp["']/i.test(html),
+      hasAVIF: /\.avif["']/i.test(html),
+      hasLazyLoading: /loading=["']lazy["']/i.test(html),
+      
+      // Accessibility
+      hasAlt: /<img[^>]*alt=/i.test(html),
+      hasAriaLabels: /aria-label=/i.test(html),
+      hasLang: /<html[^>]*lang=/i.test(html),
+      
+      // Security
+      hasHTTPS: url.startsWith('https://'),
+      
+      // Third-party
+      hasGoogleAnalytics: /google-analytics\.com|googletagmanager\.com/i.test(html),
+      hasFacebookPixel: /facebook\.com\/tr\?id=/i.test(html),
+      
+      contentLength: html.length,
+      resourceCount: (html.match(/<script[^>]*>/gi) || []).length + 
+                     (html.match(/<link[^>]*>/gi) || []).length +
+                     (html.match(/<img[^>]*>/gi) || []).length
+    };
+    
+    // ============================================================================
+    // STEP 4: PHYSICS-AWARE SCORING
+    // ============================================================================
+    
+    // Separate network latency (TTFB) from rendering time
+    const renderingTime = loadTime - ttfb;
+    
+    // KARPOV: Speed (30% weight) - Physics-aware
+    let karpovScore = 85; // Baseline
+    
+    // Score TTFB (network infrastructure)
+    if (ttfb > 800) karpovScore -= 18;
+    else if (ttfb > 600) karpovScore -= 12;
+    else if (ttfb > 400) karpovScore -= 8;
+    else if (ttfb > 200) karpovScore -= 4;
+    else if (ttfb < 100) karpovScore += 5; // Bonus for CDN
+    
+    // Score rendering time (controllable by developer)
+    const baselineRender = 800; // Optimal render time
+    if (renderingTime > 5000) karpovScore -= 25;
+    else if (renderingTime > 4000) karpovScore -= 18;
+    else if (renderingTime > 3000) karpovScore -= 12;
+    else if (renderingTime > 2000) karpovScore -= 8;
+    else if (renderingTime > 1500) karpovScore -= 4;
+    else if (renderingTime < 1000) karpovScore += 8; // Bonus
+    
+    // Penalties for blocking resources
+    karpovScore -= Math.min(15, analysis.blockingScripts * 2.5);
+    karpovScore -= Math.min(12, analysis.blockingCSS * 3.5);
     
     // Resource count penalty
-    if (resourceCount > 100) {
-      karpovScore -= Math.min(15, (resourceCount - 100) / 10);
-    }
+    if (analysis.resourceCount > 150) karpovScore -= 12;
+    else if (analysis.resourceCount > 100) karpovScore -= 8;
+    else if (analysis.resourceCount > 75) karpovScore -= 2;
+    else if (analysis.resourceCount < 20) karpovScore += 3;
     
-    karpovScore = Math.round(Math.max(0, Math.min(100, karpovScore)));
+    karpovScore = Math.max(0, Math.min(100, karpovScore));
     
-    // 2. TYCHE - Script Optimization (20% weight)
-    let tycheScore = 100;
+    // TYCHE: Interactivity (18% weight)
+    let tycheScore = 80;
+    const thirdPartyScripts = (html.match(/google-analytics|googletagmanager|facebook\.com|doubleclick/gi) || []).length;
+    tycheScore -= Math.min(20, thirdPartyScripts * 4);
+    tycheScore -= Math.min(15, analysis.blockingScripts * 3);
+    tycheScore = Math.max(0, Math.min(100, tycheScore));
     
-    // Inline scripts penalty
-    if (inlineScripts > 10) {
-      tycheScore -= Math.min(30, (inlineScripts - 10) * 2);
-    }
+    // PULSE: SEO (12% weight)
+    let pulseScore = 50;
+    if (analysis.hasTitle) pulseScore += 10;
+    if (analysis.hasDescription) pulseScore += 10;
+    if (analysis.hasH1) pulseScore += 8;
+    if (analysis.hasStructuredData) pulseScore += 8;
+    if (analysis.hasCanonical) pulseScore += 6;
+    if (analysis.hasOpenGraph) pulseScore += 6;
+    if (karpovScore >= 70) pulseScore += 2; // Core Web Vitals bonus
+    pulseScore = Math.max(0, Math.min(100, pulseScore));
     
-    // Third-party scripts penalty
-    if (thirdPartyScripts > 5) {
-      tycheScore -= Math.min(40, (thirdPartyScripts - 5) * 4);
-    }
+    // NEXUS: Mobile (12% weight)
+    let nexusScore = 50;
+    if (analysis.hasViewport) nexusScore += 20;
+    if (analysis.imgCount > 0 && analysis.hasAlt) nexusScore += 15;
+    if (analysis.hasLazyLoading) nexusScore += 10;
+    if (loadTime < 3000) nexusScore += 5; // Mobile speed
+    nexusScore = Math.max(0, Math.min(100, nexusScore));
     
-    tycheScore = Math.round(Math.max(0, Math.min(100, tycheScore)));
+    // VORTEX: Accessibility (8% weight)
+    let vortexScore = 50;
+    if (analysis.hasAlt) vortexScore += 15;
+    if (analysis.hasAriaLabels) vortexScore += 15;
+    if (analysis.hasLang) vortexScore += 10;
+    if (analysis.hasH1) vortexScore += 10;
+    vortexScore = Math.max(0, Math.min(100, vortexScore));
     
-    // 3. VORTEX - Image Optimization (10% weight)
-    let vortexScore = 100;
+    // NOVA: Scalability (7% weight)
+    let novaScore = 70;
+    if (analysis.contentLength > 500000) novaScore -= 20;
+    else if (analysis.contentLength > 200000) novaScore -= 10;
+    if (analysis.resourceCount > 100) novaScore -= 10;
+    novaScore = Math.max(0, Math.min(100, novaScore));
     
-    if (images > 0) {
-      const altRatio = imagesWithAlt / images;
-      vortexScore = Math.round(altRatio * 100);
-      
-      // Too many images penalty
-      if (images > 50) {
-        vortexScore -= Math.min(30, (images - 50) / 5);
+    // HELIX: Privacy (6% weight)
+    let helixScore = 60;
+    if (analysis.hasHTTPS) helixScore += 20;
+    if (!analysis.hasGoogleAnalytics) helixScore += 10;
+    if (!analysis.hasFacebookPixel) helixScore += 10;
+    helixScore = Math.max(0, Math.min(100, helixScore));
+    
+    // EDEN: Efficiency (4% weight)
+    let edenScore = 60;
+    if (analysis.hasWebP || analysis.hasAVIF) edenScore += 20;
+    if (analysis.hasLazyLoading) edenScore += 10;
+    if (analysis.contentLength < 100000) edenScore += 10;
+    edenScore = Math.max(0, Math.min(100, edenScore));
+    
+    // AETHER: Modern Tech (2% weight)
+    let aetherScore = 20;
+    if (analysis.hasWebP) aetherScore += 30;
+    if (analysis.hasAVIF) aetherScore += 30;
+    if (analysis.hasLazyLoading) aetherScore += 20;
+    aetherScore = Math.max(0, Math.min(100, aetherScore));
+    
+    // QUANTUM: Code Quality (1% weight)
+    let quantumScore = 70;
+    if (analysis.blockingScripts === 0) quantumScore += 15;
+    if (analysis.blockingCSS === 0) quantumScore += 15;
+    quantumScore = Math.max(0, Math.min(100, quantumScore));
+    
+    // Calculate overall P-Score
+    const pscore = Math.round(
+      karpovScore * 0.30 +
+      tycheScore * 0.18 +
+      pulseScore * 0.12 +
+      nexusScore * 0.12 +
+      vortexScore * 0.08 +
+      novaScore * 0.07 +
+      helixScore * 0.06 +
+      edenScore * 0.04 +
+      aetherScore * 0.02 +
+      quantumScore * 0.01
+    );
+    
+    // Build response
+    const result = {
+      pscore,
+      hostname,
+      url,
+      timestamp,
+      scanMethod,
+      data: {
+        karpov: { 
+          score: karpovScore,
+          ttfb,
+          renderTime: renderingTime,
+          loadTime,
+          blockingScripts: analysis.blockingScripts,
+          blockingCSS: analysis.blockingCSS,
+          resourceCount: analysis.resourceCount
+        },
+        tyche: { score: tycheScore, thirdPartyScripts },
+        pulse: { 
+          score: pulseScore,
+          hasTitle: analysis.hasTitle,
+          hasDescription: analysis.hasDescription,
+          hasStructuredData: analysis.hasStructuredData
+        },
+        nexus: { 
+          score: nexusScore,
+          hasViewport: analysis.hasViewport,
+          hasLazyLoading: analysis.hasLazyLoading
+        },
+        vortex: { score: vortexScore },
+        nova: { score: novaScore },
+        helix: { score: helixScore, hasHTTPS: analysis.hasHTTPS },
+        eden: { score: edenScore },
+        aether: { score: aetherScore },
+        quantum: { score: quantumScore }
+      }
+    };
+    
+    // Cache in D1
+    if (context.env.DB) {
+      try {
+        await context.env.DB.prepare(`
+          INSERT OR REPLACE INTO precomputed_scores 
+          (hostname, score_data, scan_method, last_updated)
+          VALUES (?, ?, ?, datetime('now'))
+        `).bind(
+          hostname,
+          JSON.stringify(result),
+          scanMethod
+        ).run();
+      } catch (e) {
+        console.error('D1 cache failed:', e);
       }
     }
     
-    vortexScore = Math.round(Math.max(0, Math.min(100, vortexScore)));
-    
-    // 4. NEXUS - Mobile Responsiveness (8% weight)
-    let nexusScore = 0;
-    if (hasViewport) nexusScore += 50;
-    if (viewportProperlyConfigured) nexusScore += 50;
-    
-    nexusScore = Math.round(nexusScore);
-    
-    // 5. HELIX - Privacy & Security (7% weight)
-    let helixScore = 60; // Base score
-    
-    // Security headers bonus
-    if (hasHSTS) helixScore += 15;
-    if (hasCSP) helixScore += 15;
-    if (hasXFrame) helixScore += 10;
-    
-    // Tracker penalty
-    if (trackerCount > 10) {
-      helixScore -= Math.min(40, (trackerCount - 10) * 3);
-    } else if (trackerCount > 5) {
-      helixScore -= (trackerCount - 5) * 4;
-    }
-    
-    helixScore = Math.round(Math.max(0, Math.min(100, helixScore)));
-    
-    // 6. PULSE - SEO Foundations (6% weight)
-    let pulseScore = 0;
-    if (hasTitle) pulseScore += 30;
-    if (titleLength >= 30 && titleLength <= 60) pulseScore += 20;
-    if (hasDescription) pulseScore += 25;
-    if (ogTags >= 4) pulseScore += 25;
-    
-    pulseScore = Math.round(Math.max(0, Math.min(100, pulseScore)));
-    
-    // 7. NOVA - CDN & Caching (6% weight)
-    let novaScore = 0;
-    if (isCDN) novaScore += 40;
-    if (hasCache) novaScore += 30;
-    if (compression === 'br') novaScore += 30;
-    else if (compression === 'gzip') novaScore += 20;
-    
-    novaScore = Math.round(Math.max(0, Math.min(100, novaScore)));
-    
-    // 8. EDEN - Page Weight (6% weight)
-    let edenScore = 100;
-    if (sizeMB > 5) {
-      edenScore = Math.max(20, 100 - ((sizeMB - 5) * 10));
-    } else if (sizeMB > 3) {
-      edenScore = 85 - ((sizeMB - 3) * 7.5);
-    } else if (sizeMB > 1) {
-      edenScore = 95 - ((sizeMB - 1) * 5);
-    }
-    
-    edenScore = Math.round(Math.max(0, Math.min(100, edenScore)));
-    
-    // 9. AETHER - Modern Standards (6% weight)
-    let aetherScore = 0;
-    if (hasManifest) aetherScore += 50;
-    if (hasModules) aetherScore += 50;
-    
-    aetherScore = Math.round(aetherScore);
-    
-    // 10. QUANTUM - Meta-Optimization (5% weight)
-    // Holistic score based on overall balance
-    const avgComponentScore = (karpovScore + tycheScore + vortexScore + nexusScore + 
-                                helixScore + pulseScore + novaScore + edenScore + aetherScore) / 9;
-    
-    let quantumScore = avgComponentScore;
-    
-    // Bonus for well-rounded sites
-    const componentScores = [karpovScore, tycheScore, vortexScore, nexusScore, helixScore, 
-                             pulseScore, novaScore, edenScore, aetherScore];
-    const minScore = Math.min(...componentScores);
-    const maxScore = Math.max(...componentScores);
-    
-    if (maxScore - minScore < 30) {
-      quantumScore += 10; // Well-balanced bonus
-    }
-    
-    quantumScore = Math.round(Math.max(0, Math.min(100, quantumScore)));
-    
-    // 11. ECHO - Console Errors (1% weight)
-    let echoScore = consoleErrors === 0 ? 100 : Math.max(0, 100 - (consoleErrors * 10));
-    echoScore = Math.round(echoScore);
-    
-    // ============================================================================
-    // STEP 7: CALCULATE WEIGHTED P-SCORE
-    // ============================================================================
-    
-    const weights = {
-      karpov: 0.25,
-      tyche: 0.20,
-      vortex: 0.10,
-      nexus: 0.08,
-      helix: 0.07,
-      pulse: 0.06,
-      nova: 0.06,
-      eden: 0.06,
-      aether: 0.06,
-      quantum: 0.05,
-      echo: 0.01
-    };
-    
-    const pscore = Math.round(
-      karpovScore * weights.karpov +
-      tycheScore * weights.tyche +
-      vortexScore * weights.vortex +
-      nexusScore * weights.nexus +
-      helixScore * weights.helix +
-      pulseScore * weights.pulse +
-      novaScore * weights.nova +
-      edenScore * weights.eden +
-      aetherScore * weights.aether +
-      quantumScore * weights.quantum +
-      echoScore * weights.echo
-    );
-    
-    // ============================================================================
-    // STEP 8: RETURN RESULTS
-    // ============================================================================
-    
-    const responseData = {
-      url: finalUrl,
-      pscore,
-      karpov: karpovScore,
-      tyche: tycheScore,
-      vortex: vortexScore,
-      nexus: nexusScore,
-      helix: helixScore,
-      pulse: pulseScore,
-      nova: novaScore,
-      eden: edenScore,
-      aether: aetherScore,
-      quantum: quantumScore,
-      echo: echoScore,
-      data: {
-        karpov: {
-          loadTime: Math.round(loadTime),
-          adjustedLoadTime: Math.round(adjustedLoadTime),
-          physicsBaseline: PHYSICS_BASELINE,
-          ttfb: Math.round(ttfb),
-          resourceCount
-        },
-        tyche: {
-          inlineScripts,
-          externalScripts,
-          thirdPartyScripts
-        },
-        vortex: {
-          images,
-          imagesWithAlt,
-          altRatio: images > 0 ? Math.round((imagesWithAlt / images) * 100) : 0
-        },
-        nexus: {
-          hasViewport,
-          viewportProperlyConfigured
-        },
-        helix: {
-          trackerCount,
-          securityHeaders: {
-            hsts: hasHSTS,
-            csp: hasCSP,
-            xframe: hasXFrame
-          }
-        },
-        pulse: {
-          hasTitle,
-          titleLength,
-          hasDescription,
-          ogTags
-        },
-        nova: {
-          isCDN,
-          hasCache,
-          compression
-        },
-        eden: {
-          sizeMB: Math.round(sizeMB * 100) / 100
-        },
-        aether: {
-          hasManifest,
-          hasModules
-        },
-        quantum: {
-          balance: maxScore - minScore,
-          avgComponentScore: Math.round(avgComponentScore)
-        },
-        echo: {
-          consoleErrors
-        }
-      },
-      scanMethod: usedBrowser ? 'browser' : 'http',
-      timestamp: result.timestamp
-    };
-    
-    console.log(`✅ Scan complete for ${hostname}: P-Score = ${pscore}`);
-    
-    return new Response(JSON.stringify(responseData), {
+    return new Response(JSON.stringify(result), {
       status: 200,
       headers: corsHeaders
     });
     
   } catch (error) {
-    console.error('Scan error:', error);
-    return new Response(JSON.stringify({ 
-      error: error.message || 'Scan failed' 
+    return new Response(JSON.stringify({
+      error: 'Scan failed',
+      details: error.message,
+      stack: error.stack
     }), {
       status: 500,
       headers: corsHeaders
