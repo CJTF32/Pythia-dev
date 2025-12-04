@@ -54,7 +54,7 @@ export async function onRequestPost(context) {
         'line_items[0][price_data][currency]': 'usd',
         'line_items[0][price_data][product_data][name]': 'Pythia Manual Scan',
         'line_items[0][price_data][product_data][description]': `Professional audit for ${url}`,
-        'line_items[0][price_data][unit_amount]': '5000', // $50.00 in cents
+        'line_items[0][price_data][unit_amount]': '5000', // $275.00 in cents
         'line_items[0][quantity]': '1',
         'mode': 'payment',
         'success_url': 'https://p-score.me/payment-success?session_id={CHECKOUT_SESSION_ID}',
