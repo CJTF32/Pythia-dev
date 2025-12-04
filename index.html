@@ -1,1322 +1,611 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pythia – The Digital Health Rating Agency</title> 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <style>
-        /* === CORE ANIMATIONS === */
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
-            50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.6); }
-        }
-        .scanning { animation: pulse-glow 2s infinite; }
-
-        /* === MODAL STYLES === */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        .modal-content {
-            background: white;
-            padding: 2rem;
-            border-radius: 1rem;
-            max-width: 500px;
-            width: 90%;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            animation: slideUp 0.3s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        @keyframes slideUp {
-            from { transform: translateY(50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        /* === BORING MODE (DEFAULT) === */
-        body:not(.retro) #pscoreExplainerPage p,
-        body:not(.retro) #pscoreExplainerPage li,
-        body:not(.retro) #pscoreExplainerPage .text-green-900,
-        body:not(.retro) .methodology-box p, 
-        body:not(.retro) .methodology-box h3,
-        body:not(.retro) .methodology-box a {
-            color: #065F46 !important;
-        }
-        
-        body:not(.retro) .methodology-box {
-            background-color: #ecfdf5 !important;
-            border-color: #059669 !important;
-            color: #065F46 !important;
-        }
-
-        /* === MENU SYSTEM === */
-        .menu-overlay { 
-            position: fixed; 
-            top: 0; 
-            left: -100%; 
-            width: 80%; 
-            max-width: 400px; 
-            height: 100vh; 
-            background: white; 
-            box-shadow: 2px 0 10px rgba(0,0,0,0.3); 
-            transition: left 0.3s ease; 
-            z-index: 1000; 
-            overflow-y: auto; 
-        }
-        .menu-overlay.open { left: 0; }
-        .menu-backdrop { 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100vh; 
-            background: rgba(0,0,0,0.5); 
-            opacity: 0; 
-            visibility: hidden; 
-            transition: all 0.3s ease; 
-            z-index: 999; 
-        }
-        .menu-backdrop.open { 
-            opacity: 1; 
-            visibility: visible; 
-        }
-        .page-content { display: none; }
-        .page-content.active { display: block; }
-
-        /* === RETRO MODE STYLES === */
-        body.retro { 
-            background: #000000 !important; 
-            font-family: 'Courier New', monospace !important; 
-            image-rendering: pixelated; 
-            color: #00ff00 !important; 
-        }
-        body.retro * { 
-            font-family: 'Courier New', monospace !important; 
-            image-rendering: pixelated; 
-        }
-        body.retro .modern-card { 
-            background: #0a0a0a !important; 
-            border: 4px solid #00ff00 !important; 
-            border-radius: 0 !important; 
-            box-shadow: 0 0 20px #00ff00 !important; 
-        }
-        body.retro .retro-button { 
-            background: #003300 !important; 
-            border: 3px solid #00ff00 !important; 
-            border-radius: 0 !important; 
-            color: #00ff00 !important; 
-            font-weight: bold !important; 
-            padding: 8px 16px !important; 
-            text-shadow: 0 0 5px #00ff00; 
-        }
-        body.retro .retro-button:hover { 
-            background: #005500 !important; 
-            box-shadow: 0 0 15px #00ff00; 
-        }
-        body.retro #themeToggle, 
-        body.retro #soundToggle, 
-        body.retro .page-content button, 
-        body.retro .menu-overlay button { 
-            background: #001a00 !important; 
-            color: #33ff33 !important; 
-            border: 2px solid #33ff33 !important; 
-            text-shadow: 0 0 3px #33ff33 !important; 
-        }
-        body.retro #themeToggle:hover, 
-        body.retro #soundToggle:hover, 
-        body.retro .page-content button:hover { 
-            background: #003300 !important; 
-            color: #66ff66 !important; 
-        }
-        body.retro .text-gray-500, 
-        body.retro .text-gray-600, 
-        body.retro .text-gray-700, 
-        body.retro .text-gray-800, 
-        body.retro p:not(.font-bold):not(h1):not(h2):not(h3) { 
-            color: #33ff33 !important; 
-            text-shadow: 0 0 2px #33ff33 !important; 
-        }
-        body.retro .score-card { 
-            border: 3px solid #00ff00 !important; 
-            border-radius: 0 !important; 
-            box-shadow: 0 0 10px currentColor !important; 
-            background: #001a00 !important; 
-        }
-        body.retro h1, body.retro h2, body.retro h3 { 
-            color: #00ff00 !important; 
-            text-shadow: 2px 2px 0 #003300, 0 0 10px #00ff00 !important; 
-        }
-        body.retro p, body.retro div, body.retro span, body.retro label { 
-            color: #00ff00 !important; 
-        }
-        body.retro .text-gray-700, 
-        body.retro .text-gray-600, 
-        body.retro .text-gray-500, 
-        body.retro .text-gray-800 { 
-            color: #00ff00 !important; 
-        }
-        body.retro .bg-gray-50, 
-        body.retro .bg-gray-300,
-        body.retro .bg-green-50, 
-        body.retro .bg-green-100,
-        body.retro .bg-red-50,
-        body.retro .bg-indigo-50, 
-        body.retro .bg-purple-50, 
-        body.retro .bg-yellow-50,
-        body.retro .bg-teal-50 { 
-            background: #001a00 !important; 
-            border: 1px solid #003300 !important; 
-        }
-        body.retro .bg-white { 
-            background: #000000 !important; 
-        }
-        body.retro input { 
-            background: #000000 !important; 
-            border: 2px solid #00ff00 !important; 
-            color: #00ff00 !important; 
-        }
-        body.retro input::placeholder { 
-            color: #006600 !important; 
-        }
-        body.retro .menu-overlay { 
-            background: #000000 !important; 
-            border-right: 4px solid #00ff00 !important; 
-        }
-        body.retro #oracleImage {
-            width: 10rem !important;
-            height: 10rem !important;
-        }
-        #mainTagline { 
-            font-size: 2rem !important; 
-        }
-        body.retro #mainTagline { 
-            font-size: 2.5rem !important; 
-        }
-        body.retro {
-            background:
-                repeating-linear-gradient(0deg, #000000 0px, #004400 3px, #000000 6px),
-                repeating-linear-gradient(90deg, #000000 0px, #002200 3px, #000000 6px) !important;
-            background-size: 6px 6px !important;
-        }
-        body.retro .rivalry-item:nth-child(odd) { 
-            background: #004400 !important; 
-            border: 2px solid #00ff00 !important; 
-            margin-bottom: 2px !important; 
-        }
-        body.retro .rivalry-item:nth-child(even) { 
-            background: #002200 !important; 
-            border: 2px solid #00aa00 !important; 
-            margin-bottom: 2px !important; 
-        }
-        body.retro #scanResults .score-card, 
-        body.retro #contestant1Results, 
-        body.retro #contestant2Results, 
-        body.retro #winnerAnnouncement { 
-            color: #00ff66 !important; 
-            text-shadow: 0 0 8px #00ff66 !important; 
-        }
-        body.retro #scanResults .score-card .text-2xl, 
-        body.retro #scanResults .score-card .text-3xl, 
-        body.retro #contestant1Results .text-3xl, 
-        body.retro #contestant2Results .text-3xl { 
-            color: #00ff66 !important; 
-            text-shadow: 0 0 15px #00ff66, 0 0 25px #00ff00 !important; 
-            font-weight: 900 !important; 
-        }
-        body.retro #winnerAnnouncement { 
-            background: #003300 !important; 
-            border: 4px solid #00ff66 !important; 
-            color: #00ff66 !important; 
-            text-shadow: 0 0 10px #00ff66, 2px 2px 0 #001100 !important; 
-        }
-        body.retro #themeToggle, 
-        body.retro #soundToggle { 
-            color: #33ff33 !important; 
-            background: #002200 !important; 
-            text-shadow: 0 0 8px #33ff33, 1px 1px 2px #000 !important; 
-            font-weight: 900 !important; 
-            border: 3px solid #33ff33 !important; 
-        }
-        body.retro .back-button, 
-        body.retro .about-content, 
-        body.retro .weighting-philosophy, 
-        body.retro .component-description { 
-            color: #33ff33 !important; 
-            text-shadow: 0 0 5px #33ff33, 1px 1px 0 #000 !important; 
-        }
-        
-        /* === RETRO MODE MODALS === */
-        body.retro .modal-content {
-            background: #000000 !important;
-            border: 4px solid #00ff00 !important;
-            border-radius: 0 !important;
-            box-shadow: 0 0 30px #00ff00 !important;
-        }
-        
-        body.retro .modal-content h2,
-        body.retro .modal-content p {
-            color: #00ff00 !important;
-            text-shadow: 0 0 5px #00ff00 !important;
-        }
-        
-        body.retro .modal-content button {
-            background: #003300 !important;
-            border: 3px solid #00ff00 !important;
-            color: #00ff00 !important;
-            border-radius: 0 !important;
-        }
-        
-        body.retro .modal-content button:hover {
-            background: #005500 !important;
-            box-shadow: 0 0 15px #00ff00 !important;
-        }
-
-        /* === CREDIT RATING STYLES === */
-        .credit-rating {
-            font-size: 3rem;
-            font-weight: 900;
-            letter-spacing: 0.1em;
-        }
-        
-        .rating-AAA { color: #059669; }
-        .rating-AA { color: #10b981; }
-        .rating-A { color: #34d399; }
-        .rating-BBB { color: #fbbf24; }
-        .rating-BB { color: #f59e0b; }
-        .rating-B { color: #f97316; }
-        .rating-CCC { color: #ef4444; }
-        .rating-CC { color: #dc2626; }
-        .rating-C { color: #991b1b; }
-        
-        body.retro .credit-rating {
-            text-shadow: 0 0 20px currentColor !important;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pythia - Website Performance Oracle</title>
+  
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Free website performance analysis. Get one unified P-Score measuring speed, accessibility, SEO, privacy, and sustainability. The Moody's of websites.">
+  <meta name="keywords" content="website performance, web performance, P-Score, performance testing, website rating, Pythia">
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="Pythia - Website Performance Oracle">
+  <meta property="og:description" content="Free website performance analysis. Get one unified P-Score measuring speed, accessibility, SEO, privacy, and sustainability.">
+  <meta property="og:type" content="website">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Retro Mode Styles */
+    body.retro-mode {
+      background: #0a0a0a;
+      color: #00ff41;
+      font-family: 'Courier New', monospace;
+    }
+    
+    body.retro-mode .card {
+      background: #1a1a1a;
+      border: 2px solid #00ff41;
+      box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+    }
+    
+    body.retro-mode .text-primary {
+      color: #00ff41 !important;
+    }
+    
+    body.retro-mode .text-gray-600,
+    body.retro-mode .text-gray-700,
+    body.retro-mode .text-gray-800 {
+      color: #00ff41 !important;
+    }
+    
+    body.retro-mode .text-gray-500 {
+      color: #00aa33 !important;
+    }
+    
+    body.retro-mode .btn-primary {
+      background: transparent;
+      border: 2px solid #00ff41;
+      color: #00ff41;
+    }
+    
+    body.retro-mode .btn-primary:hover {
+      background: #00ff41;
+      color: #0a0a0a;
+    }
+    
+    body.retro-mode input {
+      background: #1a1a1a;
+      border: 2px solid #00ff41;
+      color: #00ff41;
+    }
+    
+    body.retro-mode input::placeholder {
+      color: #00aa33;
+    }
+    
+    body.retro-mode .bg-gray-50,
+    body.retro-mode .bg-gray-100 {
+      background: #0f0f0f !important;
+    }
+    
+    body.retro-mode .border-gray-300 {
+      border-color: #00ff41 !important;
+    }
+    
+    /* Normal Mode Styles */
+    .component-bar {
+      transition: width 0.5s ease-out;
+    }
+    
+    .hamburger-menu {
+      cursor: pointer;
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+    }
+    
+    .menu-dropdown {
+      display: none;
+      position: fixed;
+      top: 60px;
+      right: 20px;
+      background: white;
+      border: 2px solid #4f46e5;
+      border-radius: 8px;
+      padding: 10px;
+      z-index: 999;
+      min-width: 200px;
+    }
+    
+    body.retro-mode .menu-dropdown {
+      background: #1a1a1a;
+      border-color: #00ff41;
+    }
+    
+    .menu-dropdown.show {
+      display: block;
+    }
+    
+    .menu-item {
+      display: block;
+      padding: 10px 15px;
+      color: #4f46e5;
+      text-decoration: none;
+      border-radius: 4px;
+    }
+    
+    body.retro-mode .menu-item {
+      color: #00ff41;
+    }
+    
+    .menu-item:hover {
+      background: #eef2ff;
+    }
+    
+    body.retro-mode .menu-item:hover {
+      background: #003d1a;
+    }
+    
+    .expandable {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+    
+    .expandable.expanded {
+      max-height: 2000px;
+    }
+    
+    .credit-rating {
+      font-size: 120px;
+      font-weight: bold;
+      line-height: 1;
+    }
+    
+    @media (max-width: 768px) {
+      .credit-rating {
+        font-size: 80px;
+      }
+    }
+  </style>
 </head>
-<body class="min-h-screen bg-gray-50 transition-colors duration-300">
+<body class="bg-gray-50 min-h-screen">
 
-<!-- Menu Backdrop -->
-<div class="menu-backdrop" id="menuBackdrop" onclick="closeMenu()"></div>
-
-<!-- Menu Overlay -->
-<div class="menu-overlay" id="menuOverlay">
-    <div class="p-6">
-        <h2 class="text-2xl font-bold mb-4 text-gray-800">Menu</h2>
-        <nav class="space-y-2">
-            <button onclick="navigateTo('home')" class="w-full text-left px-4 py-2 rounded hover:bg-gray-100 text-gray-700">🏠 Home</button>
-            <button onclick="navigateTo('about')" class="w-full text-left px-4 py-2 rounded hover:bg-gray-100 text-gray-700">ℹ️ About</button>
-            <button onclick="navigateTo('methodology')" class="w-full text-left px-4 py-2 rounded hover:bg-gray-100 text-gray-700">🔬 Methodology</button>
-            <button onclick="navigateTo('top50')" class="w-full text-left px-4 py-2 rounded hover:bg-gray-100 text-gray-700">🏆 Top 50 Websites</button>
-            <button onclick="navigateTo('battle')" class="w-full text-left px-4 py-2 rounded hover:bg-gray-100 text-gray-700">⚔️ Compare Two Websites</button>
-            
-            <!-- Retro Mode Only: Pre-stored Rivalries -->
-            <button id="rivalriesMenuButton" onclick="navigateTo('rivalries')" class="w-full text-left px-4 py-2 rounded hover:bg-gray-100 text-gray-700" style="display: none;">🔥 Famous Rivalries</button>
-        </nav>
+  <!-- Hamburger Menu -->
+  <div class="hamburger-menu" onclick="toggleMenu()">
+    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-600">
+      <line x1="5" y1="8" x2="25" y2="8"/>
+      <line x1="5" y1="15" x2="25" y2="15"/>
+      <line x1="5" y1="22" x2="25" y2="22"/>
+    </svg>
+  </div>
+  
+  <div class="menu-dropdown" id="menuDropdown">
+    <a href="/" class="menu-item">Home</a>
+    <a href="/methodology.html" class="menu-item">Methodology</a>
+    <a href="/about.html" class="menu-item">About</a>
+    <a href="/contact.html" class="menu-item">Contact</a>
+    <div class="menu-item" onclick="toggleRetroMode(); event.stopPropagation();">
+      <span id="modeToggleText">🎮 Enable Retro Mode</span>
     </div>
-</div>
+  </div>
 
-<!-- Main Container -->
-<div class="container mx-auto px-4 py-8 max-w-4xl">
-
+  <div class="container mx-auto px-4 py-8 max-w-6xl">
     <!-- Header -->
-    <div class="text-center mb-8">
-        <div class="flex justify-between items-center mb-4">
-            <button id="menuButton" onclick="openMenu()" class="p-2 rounded-lg bg-gray-200 hover:bg-gray-300">☰</button>
-            <div class="flex gap-2">
-                <button id="themeToggle" onclick="toggleTheme()" class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300">🎮 Retro Mode</button>
-                <button id="soundToggle" onclick="toggleSound()" class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300">🔊 Sound: ON</button>
-            </div>
-        </div>
-        
-        <img id="oracleImage" src="https://em-content.zobj.net/source/apple/391/woman-mage_1f9d9-200d-2640-fe0f.png" alt="Oracle" class="w-20 h-20 mx-auto mb-4">
-        <h1 id="mainTagline" class="font-bold text-gray-800 mb-2">Pythia: The Digital Health Rating Agency</h1>
-        <p class="text-gray-600 text-lg">"Moody's rates bonds. Pythia rates websites."</p>
-        <p class="text-gray-500 text-sm mt-2">Standardized digital health ratings for executives and developers</p>
+    <div class="text-center mb-12">
+      <h1 class="text-5xl font-bold text-indigo-600 text-primary mb-3">Pythia</h1>
+      <p class="text-xl text-gray-600">Website Performance Oracle</p>
+      <p class="text-sm text-gray-500 mt-2">The Moody's of Websites</p>
     </div>
 
-    <!-- ==================== HOME PAGE ==================== -->
-    <div id="homePage" class="page-content active">
-        <div class="modern-card bg-white rounded-lg shadow-lg p-8 mb-6">
-            <h2 class="text-2xl font-bold mb-4 text-gray-800">Scan a Website</h2>
-            <p class="text-gray-600 mb-4">Enter any URL to get its digital health rating</p>
-            <div class="mb-4">
-                <input 
+    <!-- Scan Form -->
+    <div class="card bg-white rounded-lg shadow-md p-8 mb-8">
+      <div class="mb-4">
+        <label class="block text-gray-700 font-medium mb-2">Enter Website URL</label>
+        <div class="flex gap-2">
+          <input 
+            type="text" 
+            id="urlInput" 
+            placeholder="example.com or https://example.com"
+            class="flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
+          />
+          <button 
+            onclick="scanWebsite()" 
+            id="scanBtn"
+            class="btn-primary px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+          >
+            Scan
+          </button>
+        </div>
+      </div>
+      
+      <div id="statusMessage" class="mt-4 text-center"></div>
+    </div>
+
+    <!-- Results -->
+    <div id="results" class="hidden">
+      <!-- Credit Rating Card -->
+      <div class="card bg-white rounded-lg shadow-md p-12 mb-8 text-center">
+        <div class="credit-rating text-indigo-600 text-primary mb-4" id="ratingValue"></div>
+        <div class="text-2xl text-gray-600 mb-2">Credit Rating</div>
+        <div class="text-xl text-gray-500">P-Score: <span id="pscoreValue" class="font-bold"></span>/100</div>
+      </div>
+
+      <!-- Opportunity Loss & Tech Shortfall -->
+      <div class="grid md:grid-cols-2 gap-6 mb-8">
+        <!-- Opportunity Loss -->
+        <div class="card bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-xl font-bold text-gray-800 mb-2">💰 Opportunity Loss</h3>
+          <div class="text-4xl font-bold text-red-600 mb-2" id="opportunityLossValue">0%</div>
+          <p class="text-sm text-gray-600 mb-4">Estimated revenue impact from performance issues</p>
+          <button onclick="toggleExpand('opportunityDetails')" class="btn-primary w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+            Learn More
+          </button>
+          
+          <div id="opportunityDetails" class="expandable mt-4 pt-4 border-t">
+            <div class="text-sm space-y-3">
+              <div>
+                <p class="font-semibold">Your Site Impact:</p>
+                <p id="opportunityBreakdown" class="text-gray-600"></p>
+              </div>
+              
+              <div>
+                <p class="font-semibold">Industry Benchmarks:</p>
+                <p class="text-gray-600">Average site: 3-5% conversion loss</p>
+                <p class="text-gray-600">E-commerce: 1% revenue per 100ms delay</p>
+                <p class="text-gray-600">Search traffic: 2-6x higher conversion</p>
+              </div>
+              
+              <div class="mt-4">
+                <label class="block font-semibold mb-2">Compare with Competitor:</label>
+                <div class="flex gap-2">
+                  <input 
                     type="text" 
-                    id="urlInput" 
-                    placeholder="https://example.com" 
-                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
-                    onkeypress="if(event.key === 'Enter') analyzeSite()"
-                >
-            </div>
-            <button 
-                onclick="analyzeSite()" 
-                class="retro-button w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-                Scan Website
-            </button>
-        </div>
-
-        <!-- Scan Results -->
-        <div id="scanResults" style="display: none;">
-            <!-- Results will be inserted here -->
-        </div>
-    </div>
-
-    <!-- ==================== ABOUT PAGE ==================== -->
-    <div id="aboutPage" class="page-content">
-        <div class="modern-card bg-white rounded-lg shadow-lg p-8">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-bold text-gray-800">About Pythia</h2>
-                <button onclick="openMenu()" class="p-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-xl">☰</button>
-            </div>
-            <div class="about-content space-y-4 text-gray-700">
-                <p class="text-lg">Pythia is <strong>The Digital Health Rating Agency</strong> — providing standardized, executive-friendly website health ratings.</p>
-                
-                <h3 class="text-xl font-bold mt-6 text-gray-800">The Problem</h3>
-                <p>Executives can't assess digital health. There's no standardized rating system, technical metrics don't translate to business ROI, and digital health is invisible to the C-suite.</p>
-                
-                <h3 class="text-xl font-bold mt-6 text-gray-800">The Solution</h3>
-                <p>Just like Moody's rates bonds, Pythia rates websites. We provide:</p>
-                <ul class="list-disc list-inside ml-4 space-y-2">
-                    <li><strong>Dual-Persona Approach:</strong> Letter grades (AAA-C) for executives, P-Scores for developers</li>
-                    <li><strong>Competitive Intelligence:</strong> Instant competitive benchmarking</li>
-                    <li><strong>Standardized Ratings:</strong> Clear ROI signals for business decisions</li>
-                </ul>
-                
-                <h3 class="text-xl font-bold mt-6 text-gray-800">Our Mission</h3>
-                <p>To make digital health as understandable and actionable as financial credit ratings — empowering executives to make informed decisions about their digital investments.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- ==================== METHODOLOGY PAGE ==================== -->
-    <div id="methodologyPage" class="page-content">
-        <div class="modern-card bg-white rounded-lg shadow-lg p-8">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-bold text-gray-800">Methodology</h2>
-                <button onclick="openMenu()" class="p-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-xl">☰</button>
-            </div>
-            
-            <div class="methodology-box bg-green-50 border-2 border-green-600 rounded-lg p-6 mb-6">
-                <h3 class="text-xl font-bold mb-4 text-green-900">Physics-Aware Scoring</h3>
-                <p class="text-green-900">Pythia uses <strong>physics-aware scoring</strong> that separates:</p>
-                <ul class="list-disc list-inside ml-4 mt-2 space-y-1 text-green-900">
-                    <li><strong>Controllable factors:</strong> Rendering performance, optimization, code quality</li>
-                    <li><strong>Uncontrollable factors:</strong> Network latency (minimum 200ms due to physics)</li>
-                </ul>
-                <p class="mt-4 text-green-900">We don't penalize websites for the speed of light. A 200ms baseline is applied before scoring begins.</p>
-            </div>
-            
-            <div class="space-y-6 text-gray-700">
-                <h3 class="text-xl font-bold text-gray-800">Rating System</h3>
-                <p>Pythia provides two rating formats:</p>
-                
-                <div class="ml-4 mt-4 space-y-3">
-                    <div>
-                        <strong class="text-gray-800">Executive View - Credit Ratings:</strong>
-                        <ul class="list-none ml-4 mt-2 space-y-1">
-                            <li>📊 <strong>AAA</strong> (95-100): Exceptional digital health</li>
-                            <li>📊 <strong>AA</strong> (90-94): Excellent performance</li>
-                            <li>📊 <strong>A</strong> (85-89): Strong performance</li>
-                            <li>📊 <strong>BBB</strong> (80-84): Good performance</li>
-                            <li>📊 <strong>BB</strong> (75-79): Fair performance</li>
-                            <li>📊 <strong>B</strong> (70-74): Below average</li>
-                            <li>📊 <strong>CCC</strong> (65-69): Poor performance</li>
-                            <li>📊 <strong>CC</strong> (60-64): Very poor</li>
-                            <li>📊 <strong>C</strong> (0-59): Critical issues</li>
-                        </ul>
-                    </div>
-                    
-                    <div>
-                        <strong class="text-gray-800">Developer View - P-Scores:</strong>
-                        <p class="ml-4 mt-2">Numerical scores from 0-100 with detailed component breakdowns across 11 performance metrics.</p>
-                    </div>
+                    id="competitorUrl" 
+                    placeholder="competitor.com"
+                    class="flex-1 px-3 py-2 border-2 border-gray-300 rounded focus:border-indigo-500 focus:outline-none text-sm"
+                  />
+                  <button onclick="scanCompetitor()" class="btn-primary px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm">
+                    Scan
+                  </button>
                 </div>
-                
-                <h3 class="text-xl font-bold mt-6 text-gray-800">11 Core Components</h3>
-                <p>Our P-Score aggregates 11 weighted components:</p>
-                <ol class="list-decimal list-inside ml-4 mt-2 space-y-2">
-                    <li><strong>Karpov:</strong> Speed & load time (TTFB, rendering, resource loading)</li>
-                    <li><strong>Nexus:</strong> Mobile performance & responsiveness</li>
-                    <li><strong>Pulse:</strong> SEO foundations & discoverability</li>
-                    <li><strong>Tyche:</strong> Interactivity & script optimization</li>
-                    <li><strong>Vortex:</strong> Accessibility & inclusive design</li>
-                    <li><strong>Helix:</strong> Privacy & security measures</li>
-                    <li><strong>Nova:</strong> CDN & caching infrastructure</li>
-                    <li><strong>Eden:</strong> Page weight & resource efficiency</li>
-                    <li><strong>Aether:</strong> Modern web standards & technologies</li>
-                    <li><strong>Quantum:</strong> Code quality & optimization</li>
-                    <li><strong>Echo:</strong> Sustainability & carbon footprint</li>
-                </ol>
-                
-                <p class="mt-4 text-sm text-gray-600"><a href="https://p-score.me" class="text-indigo-600 hover:underline" target="_blank">Learn more about our methodology →</a></p>
+                <div id="competitorResults" class="mt-3"></div>
+              </div>
             </div>
+          </div>
         </div>
+
+        <!-- Tech Shortfall -->
+        <div class="card bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-xl font-bold text-gray-800 mb-2">⚙️ Tech Shortfall</h3>
+          <div class="text-4xl font-bold text-orange-600 mb-2" id="techShortfallValue">0%</div>
+          <p class="text-sm text-gray-600 mb-4">Performance gap to achieve 100% score</p>
+          <button onclick="toggleExpand('techDetails')" class="btn-primary w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+            Learn More
+          </button>
+          
+          <div id="techDetails" class="expandable mt-4 pt-4 border-t">
+            <div class="text-sm space-y-3">
+              <p class="font-semibold mb-2">Performance Breakdown:</p>
+              <div id="indexBreakdown" class="space-y-2">
+                <!-- Index details will be inserted here -->
+              </div>
+              
+              <div class="mt-4 pt-4 border-t">
+                <p class="font-semibold">Your Performance vs Benchmarks:</p>
+                <p id="benchmarkComparison" class="text-gray-600 mt-2"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- How to Fix -->
+      <div class="card bg-white rounded-lg shadow-md p-8">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">🔧 How to Fix</h2>
+        <p class="text-gray-600 mb-6">Priority improvements based on your performance analysis:</p>
+        
+        <div id="fixRecommendations" class="space-y-4">
+          <!-- Recommendations will be inserted here -->
+        </div>
+      </div>
+
     </div>
 
-    <!-- ==================== TOP 50 PAGE ==================== -->
-    <div id="top50Page" class="page-content">
-        <div class="modern-card bg-white rounded-lg shadow-lg p-8">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-bold text-gray-800">Top 50 Websites</h2>
-                <button onclick="openMenu()" class="p-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-xl">☰</button>
-            </div>
-            <p class="text-gray-600 mb-4">Scan the world's most popular websites</p>
-            <button onclick="scanTop50()" class="retro-button w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors mb-6">
-                Start Scanning Top 50
-            </button>
-            <div id="top50Results">
-                <!-- Results will be inserted here -->
-            </div>
-        </div>
-    </div>
+  </div>
 
-    <!-- ==================== BATTLE PAGE (Compare Two Websites) ==================== -->
-    <div id="battlePage" class="page-content">
-        <div class="modern-card bg-white rounded-lg shadow-lg p-8">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-bold text-gray-800">Compare Two Websites</h2>
-                <button onclick="openMenu()" class="p-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-xl">☰</button>
-            </div>
-            <p class="text-gray-600 mb-6">Enter two URLs to see which performs better</p>
-            
-            <div class="grid md:grid-cols-2 gap-4 mb-6">
-                <div>
-                    <label class="block text-gray-700 mb-2 font-semibold">Website 1</label>
-                    <input 
-                        type="text" 
-                        id="contestant1Input" 
-                        placeholder="https://website1.com" 
-                        class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
-                    >
-                </div>
-                <div>
-                    <label class="block text-gray-700 mb-2 font-semibold">Website 2</label>
-                    <input 
-                        type="text" 
-                        id="contestant2Input" 
-                        placeholder="https://website2.com" 
-                        class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
-                    >
-                </div>
-            </div>
-            
-            <button 
-                onclick="startBattle()" 
-                class="retro-button w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors mb-6"
-            >
-                🥊 Start Comparison
-            </button>
-            
-            <div id="battleResults" class="hidden">
-                <div class="grid md:grid-cols-2 gap-4 mb-6">
-                    <div id="contestant1Results"></div>
-                    <div id="contestant2Results"></div>
-                </div>
-                <div id="winnerAnnouncement" class="text-center"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ==================== RIVALRIES PAGE (Retro Mode Only) ==================== -->
-    <div id="rivalriesPage" class="page-content">
-        <div class="modern-card bg-white rounded-lg shadow-lg p-8">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-bold text-gray-800">Famous Rivalries</h2>
-                <button onclick="openMenu()" class="p-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-xl">☰</button>
-            </div>
-            <p class="text-gray-600 mb-6">Classic tech battles — click any rivalry to compare</p>
-            <div id="rivalriesList">
-                <!-- Rivalries will be inserted here -->
-            </div>
-        </div>
-    </div>
-
-</div>
-
-<!-- ==================== JAVASCRIPT ==================== -->
-<script>
-// ============================================================================
-// STATE MANAGEMENT
-// ============================================================================
-let soundEnabled = true;
-let isRetroMode = false;
-
-// ============================================================================
-// NAVIGATION
-// ============================================================================
-function openMenu() {
-    document.getElementById('menuOverlay').classList.add('open');
-    document.getElementById('menuBackdrop').classList.add('open');
-    playSound('menu');
-}
-
-function closeMenu() {
-    document.getElementById('menuOverlay').classList.remove('open');
-    document.getElementById('menuBackdrop').classList.remove('open');
-}
-
-function navigateTo(page) {
-    // Hide all pages
-    document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+  <script>
+    let currentScanData = null;
     
-    // Show selected page
-    const pageMap = {
-        'home': 'homePage',
-        'about': 'aboutPage',
-        'methodology': 'methodologyPage',
-        'top50': 'top50Page',
-        'battle': 'battlePage',
-        'rivalries': 'rivalriesPage'
-    };
-    
-    const pageId = pageMap[page];
-    if (pageId) {
-        document.getElementById(pageId).classList.add('active');
+    function toggleMenu() {
+      const menu = document.getElementById('menuDropdown');
+      menu.classList.toggle('show');
     }
     
-    closeMenu();
-    playSound('click');
-}
-
-// ============================================================================
-// THEME TOGGLE
-// ============================================================================
-function toggleTheme() {
-    isRetroMode = !isRetroMode;
-    document.body.classList.toggle('retro');
-    
-    const toggle = document.getElementById('themeToggle');
-    toggle.textContent = isRetroMode ? '💼 Professional Mode' : '🎮 Retro Mode';
-    
-    // Show/hide rivalries menu button based on mode
-    const rivalriesButton = document.getElementById('rivalriesMenuButton');
-    rivalriesButton.style.display = isRetroMode ? 'block' : 'none';
-    
-    // Load rivalries if switching to retro mode
-    if (isRetroMode) {
-        loadRivalries();
+    function toggleRetroMode() {
+      document.body.classList.toggle('retro-mode');
+      const modeText = document.getElementById('modeToggleText');
+      if (document.body.classList.contains('retro-mode')) {
+        modeText.textContent = '💼 Enable Professional Mode';
+        localStorage.setItem('retroMode', 'true');
+      } else {
+        modeText.textContent = '🎮 Enable Retro Mode';
+        localStorage.setItem('retroMode', 'false');
+      }
     }
     
-    playSound('powerup');
-}
+    // Load saved mode preference
+    if (localStorage.getItem('retroMode') === 'true') {
+      document.body.classList.add('retro-mode');
+      document.getElementById('modeToggleText').textContent = '💼 Enable Professional Mode';
+    }
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', function(event) {
+      const menu = document.getElementById('menuDropdown');
+      const hamburger = document.querySelector('.hamburger-menu');
+      
+      if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
+        menu.classList.remove('show');
+      }
+    });
+    
+    function toggleExpand(id) {
+      const element = document.getElementById(id);
+      element.classList.toggle('expanded');
+    }
 
-// ============================================================================
-// SOUND TOGGLE
-// ============================================================================
-function toggleSound() {
-    soundEnabled = !soundEnabled;
-    const toggle = document.getElementById('soundToggle');
-    toggle.textContent = soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
-}
-
-function playSound(type) {
-    if (!soundEnabled) return;
-    
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    const sounds = {
-        'scan': { freq: 440, duration: 0.1 },
-        'success': { freq: 880, duration: 0.2 },
-        'click': { freq: 220, duration: 0.05 },
-        'menu': { freq: 330, duration: 0.1 },
-        'powerup': { freq: 660, duration: 0.15 }
-    };
-    
-    const sound = sounds[type] || sounds['click'];
-    oscillator.frequency.value = sound.freq;
-    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + sound.duration);
-    
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + sound.duration);
-}
-
-// ============================================================================
-// CREDIT RATING CONVERSION
-// ============================================================================
-function pscoreToRating(pscore) {
-    if (pscore >= 95) return { rating: 'AAA', class: 'rating-AAA', description: 'Exceptional' };
-    if (pscore >= 90) return { rating: 'AA', class: 'rating-AA', description: 'Excellent' };
-    if (pscore >= 85) return { rating: 'A', class: 'rating-A', description: 'Strong' };
-    if (pscore >= 80) return { rating: 'BBB', class: 'rating-BBB', description: 'Good' };
-    if (pscore >= 75) return { rating: 'BB', class: 'rating-BB', description: 'Fair' };
-    if (pscore >= 70) return { rating: 'B', class: 'rating-B', description: 'Below Average' };
-    if (pscore >= 65) return { rating: 'CCC', class: 'rating-CCC', description: 'Poor' };
-    if (pscore >= 60) return { rating: 'CC', class: 'rating-CC', description: 'Very Poor' };
-    return { rating: 'C', class: 'rating-C', description: 'Critical' };
-}
-
-// ============================================================================
-// GRACEFUL ERROR HANDLING (No Fake Pre-Computed Scores)
-// ============================================================================
-// Some sites may block automated scanning - we handle this gracefully
-// without pre-populating fake data
-
-// ============================================================================
-// ANALYZE SITE (Main Scan Function)
-// ============================================================================
-async function analyzeSite() {
-    const urlInput = document.getElementById('urlInput');
-    let url = urlInput.value.trim();
-    
-    if (!url) {
-        alert('Please enter a URL');
+    async function scanWebsite() {
+      const urlInput = document.getElementById('urlInput');
+      const scanBtn = document.getElementById('scanBtn');
+      const statusMessage = document.getElementById('statusMessage');
+      const results = document.getElementById('results');
+      
+      const url = urlInput.value.trim();
+      
+      if (!url) {
+        statusMessage.innerHTML = '<p class="text-red-600">Please enter a URL</p>';
         return;
-    }
-    
-    // Add https:// if missing
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        url = 'https://' + url;
-    }
-    
-    const hostname = new URL(url).hostname.replace('www.', '');
-    playSound('scan');
-    
-    const resultsDiv = document.getElementById('scanResults');
-    resultsDiv.style.display = 'block';
-    resultsDiv.innerHTML = `
-        <div class="modern-card bg-white rounded-lg shadow-lg p-8 text-center scanning">
-            <div class="text-6xl mb-4">🔮</div>
-            <p class="text-xl font-semibold text-gray-800">Scanning ${hostname}...</p>
-            <p class="text-gray-600 mt-2">Analyzing digital health across 11 components</p>
-        </div>
-    `;
-    
-    try {
+      }
+      
+      // Show loading state
+      scanBtn.disabled = true;
+      scanBtn.textContent = 'Scanning...';
+      statusMessage.innerHTML = '<p class="text-indigo-600 animate-pulse">Analyzing website performance...</p>';
+      results.classList.add('hidden');
+      
+      try {
         const response = await fetch('/api/scan', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url })
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ url })
         });
+        
+        if (!response.ok) {
+          throw new Error('Scan failed');
+        }
         
         const data = await response.json();
         
         if (data.error) {
-            throw new Error(data.error);
+          throw new Error(data.error);
         }
         
+        currentScanData = data;
         displayResults(data);
-        playSound('success');
+        statusMessage.innerHTML = '';
         
-    } catch (error) {
-        console.error('Scan error:', error);
-        resultsDiv.innerHTML = `
-            <div class="modern-card bg-yellow-50 border-2 border-yellow-300 rounded-lg shadow-lg p-8">
-                <p class="text-xl font-semibold text-yellow-800 mb-4">⚠️ Scan Unavailable</p>
-                <p class="text-yellow-700 mb-4">
-                    Unable to scan <strong>${hostname}</strong>. This can happen when:
-                </p>
-                <ul class="text-yellow-700 list-disc list-inside mb-4 text-left">
-                    <li>The site blocks automated scanning tools (common for large platforms)</li>
-                    <li>The site is behind authentication or a firewall</li>
-                    <li>The site is temporarily unavailable</li>
-                    <li>Network connectivity issues</li>
-                </ul>
-                <p class="text-yellow-700 mb-4">
-                    <strong>Try:</strong> A different website, or scan from a different network
-                </p>
-                <p class="text-sm text-yellow-600 italic">
-                    Error: ${error.message}
-                </p>
-            </div>
-        `;
+      } catch (error) {
+        statusMessage.innerHTML = `<p class="text-red-600">Error: ${error.message}</p>`;
+      } finally {
+        scanBtn.disabled = false;
+        scanBtn.textContent = 'Scan';
+      }
     }
-}
-
-// ============================================================================
-// DISPLAY RESULTS
-// ============================================================================
-function displayResults(data) {
-    // Transform nested API response to flat structure for display
-    const scores = {
-        pscore: data.pscore,
-        mscore: data.mscore || data.pscore, // Fallback to pscore if mscore not available
-        moodyGrade: data.moodyGrade || 'N/A',
-        moodyDescription: data.moodyDescription || '',
-        revenueRealization: data.revenueRealization || Math.round(data.pscore),
-        estimatedRevenueLoss: data.estimatedRevenueLoss || (100 - Math.round(data.pscore)),
-        revenueSummary: data.revenueSummary || '',
-        sector: data.sector || 'Other',
-        url: data.url,
-        karpov: data.data?.karpov?.score || 0,
-        tyche: data.data?.tyche?.score || 0,
-        vortex: data.data?.vortex?.score || 0,
-        nexus: data.data?.nexus?.score || 0,
-        helix: data.data?.helix?.score || 0,
-        pulse: data.data?.pulse?.score || 0,
-        nova: data.data?.nova?.score || 0,
-        eden: data.data?.eden?.score || 0,
-        aether: data.data?.aether?.score || 0,
-        quantum: data.data?.quantum?.score || 0,
-        echo: data.data?.echo?.score || 0
-    };
     
-    const rating = pscoreToRating(scores.pscore);
-    const hostname = new URL(scores.url).hostname.replace('www.', '');
-    
-    const resultsDiv = document.getElementById('scanResults');
-    resultsDiv.innerHTML = `
-        <div class="modern-card bg-white rounded-lg shadow-lg p-8 mb-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-2xl font-bold text-gray-800">${hostname}</h3>
-                <div class="flex gap-2">
-                    <span class="px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">${scores.sector}</span>
-                    ${data.cached ? '<span class="px-3 py-1 text-xs font-semibold bg-gray-100 text-gray-600 rounded-full" title="Cached result from recent scan">⚡ Cached</span>' : '<span class="px-3 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded-full" title="Fresh scan just completed">🔄 Live Scan</span>'}
-                </div>
-            </div>
-            
-            <!-- Triple Rating Display -->
-            <div class="grid md:grid-cols-3 gap-4 mb-6">
-                <!-- Executive View: Moody's Grade -->
-                <div class="text-center p-6 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg border-2 border-indigo-200">
-                    <p class="text-xs text-gray-600 mb-2 font-semibold uppercase tracking-wide">Moody's Rating</p>
-                    <div class="text-5xl font-bold mb-2 ${scores.mscore >= 85 ? 'text-green-600' : scores.mscore >= 70 ? 'text-yellow-600' : 'text-red-600'}">${scores.moodyGrade}</div>
-                    <p class="text-sm text-gray-700">${scores.moodyDescription}</p>
-                </div>
-                
-                <!-- Business View: M-Score -->
-                <div class="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border-2 border-green-200">
-                    <p class="text-xs text-gray-600 mb-2 font-semibold uppercase tracking-wide">Revenue Score</p>
-                    <div class="text-5xl font-bold mb-2 ${scores.mscore >= 85 ? 'text-green-600' : scores.mscore >= 70 ? 'text-yellow-600' : 'text-red-600'}">${scores.mscore}</div>
-                    <p class="text-sm text-gray-700">M-Score / 100</p>
-                    <p class="text-xs text-gray-600 mt-2">${scores.revenueRealization}% realized</p>
-                </div>
-                
-                <!-- Developer View: P-Score -->
-                <div class="text-center p-6 bg-gray-50 rounded-lg border-2 border-gray-200">
-                    <p class="text-xs text-gray-600 mb-2 font-semibold uppercase tracking-wide">Technical Score</p>
-                    <div class="text-5xl font-bold mb-2 ${scores.pscore >= 80 ? 'text-green-600' : scores.pscore >= 60 ? 'text-yellow-600' : 'text-red-600'}">${scores.pscore}</div>
-                    <p class="text-sm text-gray-700">P-Score / 100</p>
-                </div>
-            </div>
-            
-            <!-- Revenue Impact Summary -->
-            <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
-                <h4 class="text-sm font-bold text-blue-900 mb-2">💰 Business Impact</h4>
-                <p class="text-sm text-blue-800">${scores.revenueSummary || 'Performance analysis complete.'}</p>
-                ${scores.estimatedRevenueLoss > 10 ? `
-                <p class="text-xs text-blue-700 mt-2">
-                    <strong>Estimated opportunity loss:</strong> ~${scores.estimatedRevenueLoss}% of potential conversions due to speed, mobile, and SEO issues.
-                </p>` : ''}
-            </div>
-            
-            <!-- Component Breakdown -->
-            <div class="mt-6">
-                <h4 class="text-lg font-bold mb-3 text-gray-800">Component Breakdown</h4>
-                <div class="space-y-2">
-                    ${renderComponentBar('Karpov (Speed)', scores.karpov, 30)}
-                    ${renderComponentBar('Nexus (Mobile)', scores.nexus, 18)}
-                    ${renderComponentBar('Pulse (SEO)', scores.pulse, 13)}
-                    ${renderComponentBar('Tyche (Interactivity)', scores.tyche, 10)}
-                    ${renderComponentBar('Vortex (Accessibility)', scores.vortex, 10)}
-                    ${renderComponentBar('Helix (Privacy)', scores.helix, 6)}
-                    ${renderComponentBar('Nova (CDN)', scores.nova, 5)}
-                    ${renderComponentBar('Eden (Weight)', scores.eden, 4)}
-                    ${renderComponentBar('Aether (Modern)', scores.aether, 2)}
-                    ${renderComponentBar('Quantum (Code)', scores.quantum, 1)}
-                    ${renderComponentBar('Echo (Sustainability)', scores.echo, 1)}
-                </div>
-            </div>
-            
-            <!-- Amazon Comparison Calculator -->
-            <div class="mt-6 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
-                <h4 class="text-lg font-bold mb-2 text-gray-800">💸 What if this was Amazon?</h4>
-                <p class="text-gray-700 text-sm mb-3">Amazon loses ~$1.6B/year from slow load times. Calculate your potential impact:</p>
-                <button onclick="showAmazonCalculator(${scores.pscore}, '${hostname}')" class="w-full bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-700">
-                    Calculate Revenue Impact
-                </button>
-            </div>
-            
-            <!-- Custom Company Calculator -->
-            <div class="mt-4 p-4 bg-green-50 border-2 border-green-300 rounded-lg">
-                <h4 class="text-lg font-bold mb-2 text-gray-800">📊 Your Company Calculator</h4>
-                <p class="text-gray-700 text-sm mb-3">Estimate performance impact on your revenue:</p>
-                <button onclick="showCustomCalculator(${scores.pscore}, '${hostname}')" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">
-                    Calculate for Your Business
-                </button>
-            </div>
-            
-            <!-- Digital Health Score Button -->
-            <div class="mt-4 p-4 bg-purple-50 border-2 border-purple-300 rounded-lg">
-                <h4 class="text-lg font-bold mb-2 text-gray-800">💎 Digital Health Score™</h4>
-                <p class="text-gray-700 text-sm mb-3">See how this rating compares to industry benchmarks:</p>
-                <button onclick="showDigitalHealthScore(${scores.pscore}, '${rating.rating}')" class="w-full bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700">
-                    View Digital Health Analysis
-                </button>
-            </div>
-        </div>
-    `;
-}
-
-function renderComponentBar(name, score, weight) {
-    const color = score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-500' : 'bg-red-500';
-    return `
-        <div>
-            <div class="flex justify-between text-sm mb-1">
-                <span class="text-gray-700">${name}</span>
-                <span class="text-gray-600">${score}/100</span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-3">
-                <div class="${color} h-3 rounded-full" style="width: ${score}%"></div>
-            </div>
-        </div>
-    `;
-}
-
-// ============================================================================
-// AMAZON CALCULATOR
-// ============================================================================
-function showAmazonCalculator(pscore, hostname) {
-    const physicsBaseline = 200; // 200ms minimum due to physics
-    const amazonRevenue = 575000000000; // $575B annual revenue
-    const conversionRate = 0.13; // 13% conversion rate
-    
-    // Calculate lost revenue based on P-score decline
-    const scorePenalty = Math.max(0, 100 - pscore) / 100;
-    const estimatedDelay = physicsBaseline + (scorePenalty * 2000); // Up to 2s additional delay
-    const revenueImpact = (amazonRevenue * 0.01 * (estimatedDelay / 100)); // 1% per 100ms after baseline
-    
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <h2 class="text-2xl font-bold mb-4 text-gray-800">💸 Amazon Revenue Calculator</h2>
-            
-            <div class="mb-4 p-4 bg-gray-50 rounded-lg">
-                <p class="text-gray-700 mb-2"><strong>${hostname}</strong> P-Score: <span class="text-2xl font-bold">${pscore}</span></p>
-                <p class="text-gray-600 text-sm">Physics baseline: ${physicsBaseline}ms (cannot be improved)</p>
-                <p class="text-gray-600 text-sm">Estimated total delay: ~${Math.round(estimatedDelay)}ms</p>
-            </div>
-            
-            <div class="mb-4 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
-                <p class="text-gray-800 font-bold mb-2">If this was Amazon's performance:</p>
-                <p class="text-3xl font-bold text-red-600 mb-2">$${(revenueImpact / 1000000000).toFixed(2)}B</p>
-                <p class="text-gray-700 text-sm">Estimated annual revenue impact</p>
-            </div>
-            
-            <div class="mb-6 text-sm text-gray-600">
-                <p><strong>Calculation:</strong></p>
-                <p>• Amazon's annual revenue: $575B</p>
-                <p>• Baseline performance penalty: ${physicsBaseline}ms</p>
-                <p>• Additional delay from poor optimization: ${Math.round(estimatedDelay - physicsBaseline)}ms</p>
-                <p>• Industry standard: 1% revenue loss per 100ms delay</p>
-            </div>
-            
-            <button 
-                onclick="this.closest('.modal-overlay').remove()" 
-                class="w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-                Close
-            </button>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    playSound('success');
-}
-
-// ============================================================================
-// CUSTOM COMPANY CALCULATOR
-// ============================================================================
-function showCustomCalculator(pscore, hostname) {
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <h2 class="text-2xl font-bold mb-4 text-gray-800">📊 Custom Revenue Calculator</h2>
-            
-            <div class="mb-4 p-4 bg-gray-50 rounded-lg">
-                <p class="text-gray-700 mb-2"><strong>${hostname}</strong> P-Score: <span class="text-2xl font-bold">${pscore}</span></p>
-            </div>
-            
-            <div class="mb-4">
-                <label class="block text-gray-700 mb-2 font-semibold">Your Annual Revenue ($)</label>
-                <input 
-                    type="number" 
-                    id="customRevenue" 
-                    placeholder="1000000" 
-                    class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg"
-                >
-            </div>
-            
-            <div class="mb-4">
-                <label class="block text-gray-700 mb-2 font-semibold">Your Conversion Rate (%)</label>
-                <input 
-                    type="number" 
-                    id="customConversion" 
-                    placeholder="2.5" 
-                    step="0.1" 
-                    class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg"
-                >
-            </div>
-            
-            <button 
-                onclick="calculateCustomImpact(${pscore})" 
-                class="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition-colors mb-4"
-            >
-                Calculate Impact
-            </button>
-            
-            <div id="customResults" class="hidden mb-4 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
-                <!-- Results will be inserted here -->
-            </div>
-            
-            <button 
-                onclick="this.closest('.modal-overlay').remove()" 
-                class="w-full bg-gray-400 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors"
-            >
-                Close
-            </button>
-        </div>
-    `;
-    document.body.appendChild(modal);
-}
-
-function calculateCustomImpact(pscore) {
-    const revenue = parseFloat(document.getElementById('customRevenue').value);
-    const conversion = parseFloat(document.getElementById('customConversion').value);
-    
-    if (!revenue || !conversion) {
-        alert('Please enter both revenue and conversion rate');
+    async function scanCompetitor() {
+      const input = document.getElementById('competitorUrl');
+      const resultsDiv = document.getElementById('competitorResults');
+      const url = input.value.trim();
+      
+      if (!url) {
+        resultsDiv.innerHTML = '<p class="text-red-600 text-sm">Please enter a URL</p>';
         return;
-    }
-    
-    const physicsBaseline = 200;
-    const scorePenalty = Math.max(0, 100 - pscore) / 100;
-    const estimatedDelay = physicsBaseline + (scorePenalty * 2000);
-    const revenueImpact = (revenue * 0.01 * (estimatedDelay / 100));
-    
-    const resultsDiv = document.getElementById('customResults');
-    resultsDiv.classList.remove('hidden');
-    resultsDiv.innerHTML = `
-        <p class="text-gray-800 font-bold mb-2">Estimated Annual Impact:</p>
-        <p class="text-3xl font-bold text-red-600 mb-2">$${revenueImpact.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-        <p class="text-gray-700 text-sm mb-4">Potential revenue at risk from performance issues</p>
+      }
+      
+      resultsDiv.innerHTML = '<p class="text-gray-600 text-sm">Scanning competitor...</p>';
+      
+      try {
+        const response = await fetch('/api/scan', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ url })
+        });
         
-        <div class="text-sm text-gray-600">
-            <p><strong>Based on:</strong></p>
-            <p>• Your revenue: $${revenue.toLocaleString()}</p>
-            <p>• Your conversion rate: ${conversion}%</p>
-            <p>• Estimated delay: ${Math.round(estimatedDelay)}ms</p>
-            <p>• Physics baseline: ${physicsBaseline}ms</p>
-        </div>
-    `;
-    
-    playSound('success');
-}
-
-// ============================================================================
-// DIGITAL HEALTH SCORE
-// ============================================================================
-function showDigitalHealthScore(pscore, creditRating) {
-    // Industry benchmarks
-    const benchmarks = {
-        'E-commerce': 78,
-        'SaaS': 85,
-        'Media': 72,
-        'Finance': 88,
-        'Healthcare': 82,
-        'Enterprise': 80
-    };
-    
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    
-    let benchmarkHTML = '';
-    for (const [sector, score] of Object.entries(benchmarks)) {
-        const comparison = pscore >= score ? '✅ Above' : '⚠️ Below';
-        benchmarkHTML += `
-            <div class="flex justify-between items-center mb-2">
-                <span class="text-gray-700">${sector}</span>
-                <span class="text-gray-600">${comparison} (${score})</span>
-            </div>
-        `;
-    }
-    
-    modal.innerHTML = `
-        <div class="modal-content">
-            <h2 class="text-2xl font-bold mb-4 text-gray-800">💎 Digital Health Score™</h2>
-            
-            <div class="mb-4 p-4 bg-purple-50 rounded-lg text-center">
-                <div class="credit-rating ${pscoreToRating(pscore).class} mb-2">${creditRating}</div>
-                <p class="text-gray-700 font-bold">Digital Health Rating</p>
-                <p class="text-gray-600 text-sm mt-2">P-Score: ${pscore}/100</p>
-            </div>
-            
-            <div class="mb-6">
-                <h3 class="text-lg font-bold mb-3 text-gray-800">Industry Benchmarks</h3>
-                ${benchmarkHTML}
-            </div>
-            
-            <div class="mb-4 text-sm text-gray-600">
-                <p><strong>What this means:</strong></p>
-                <p class="mt-2">The Digital Health Score™ uses a Gemini-inspired formula that weights 11 performance components to provide a comprehensive view of your website's technical health and business impact.</p>
-            </div>
-            
-            <button 
-                onclick="this.closest('.modal-overlay').remove()" 
-                class="w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-                Close
-            </button>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    playSound('success');
-}
-
-// ============================================================================
-// TOP 50 SCANNER
-// ============================================================================
-const TOP_50_SITES = [
-    'google.com', 'youtube.com', 'facebook.com', 'twitter.com', 'instagram.com',
-    'baidu.com', 'wikipedia.org', 'yandex.ru', 'yahoo.com', 'whatsapp.com',
-    'amazon.com', 'tiktok.com', 'reddit.com', 'netflix.com', 'linkedin.com',
-    'twitch.tv', 'bing.com', 'microsoft.com', 'apple.com', 'adobe.com',
-    'wordpress.com', 'github.com', 'zoom.us', 'discord.com', 'pinterest.com',
-    'ebay.com', 'walmart.com', 'bbc.com', 'cnn.com', 'espn.com',
-    'stackoverflow.com', 'quora.com', 'medium.com', 'tumblr.com', 'spotify.com',
-    'paypal.com', 'shopify.com', 'dropbox.com', 'salesforce.com', 'slack.com',
-    'airbnb.com', 'uber.com', 'booking.com', 'tripadvisor.com', 'imdb.com',
-    'nytimes.com', 'washingtonpost.com', 'theguardian.com', 'reuters.com', 'bloomberg.com'
-];
-
-async function scanTop50() {
-    const resultsDiv = document.getElementById('top50Results');
-    resultsDiv.innerHTML = `
-        <div class="text-center mb-4">
-            <p class="text-gray-700">Scanning top websites... This may take a few minutes.</p>
-        </div>
-    `;
-    
-    const results = [];
-    
-    for (let i = 0; i < TOP_50_SITES.length; i++) {
-        const site = TOP_50_SITES[i];
-        const url = `https://${site}`;
-        
-        resultsDiv.innerHTML += `<p class="text-gray-600 text-sm">Scanning ${site}...</p>`;
-        
-        try {
-            const response = await fetch('/api/scan', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url })
-            });
-            
-            const data = await response.json();
-            
-            if (!data.error) {
-                const rating = pscoreToRating(data.pscore);
-                results.push({
-                    site,
-                    pscore: data.pscore,
-                    rating: rating.rating,
-                    ratingClass: rating.class
-                });
-            }
-        } catch (error) {
-            console.error(`Failed to scan ${site}:`, error);
+        if (!response.ok) {
+          throw new Error('Scan failed');
         }
+        
+        const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        
+        const diff = currentScanData.pscore - data.pscore;
+        const diffText = diff > 0 
+          ? `<span class="text-green-600">+${diff.toFixed(1)} points ahead</span>` 
+          : `<span class="text-red-600">${diff.toFixed(1)} points behind</span>`;
+        
+        resultsDiv.innerHTML = `
+          <div class="bg-gray-50 p-3 rounded">
+            <p class="font-semibold text-sm">${url}</p>
+            <p class="text-sm">P-Score: ${data.pscore.toFixed(1)}/100 (${data.rating})</p>
+            <p class="text-sm mt-1">Your site: ${diffText}</p>
+          </div>
+        `;
+        
+      } catch (error) {
+        resultsDiv.innerHTML = `<p class="text-red-600 text-sm">Error: ${error.message}</p>`;
+      }
     }
     
-    // Sort by P-score descending
-    results.sort((a, b) => b.pscore - a.pscore);
+    function displayResults(data) {
+      const results = document.getElementById('results');
+      const pscoreValue = document.getElementById('pscoreValue');
+      const ratingValue = document.getElementById('ratingValue');
+      
+      // Display P-Score and Rating
+      pscoreValue.textContent = data.pscore.toFixed(1);
+      ratingValue.textContent = data.rating;
+      ratingValue.className = 'credit-rating mb-4 ' + getRatingColor(data.rating);
+      
+      // Calculate Opportunity Loss
+      displayOpportunityLoss(data);
+      
+      // Calculate Tech Shortfall
+      displayTechShortfall(data);
+      
+      // Generate Fix Recommendations
+      generateFixRecommendations(data);
+      
+      // Show results
+      results.classList.remove('hidden');
+      
+      // Scroll to results
+      results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
     
-    // Display results
-    let html = '<div class="space-y-2">';
-    results.forEach((result, index) => {
-        html += `
-            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div class="flex items-center gap-4">
-                    <span class="text-xl font-bold text-gray-600">#${index + 1}</span>
-                    <span class="text-gray-800 font-semibold">${result.site}</span>
-                </div>
-                <div class="flex items-center gap-4">
-                    <span class="text-2xl font-bold ${result.ratingClass}">${result.rating}</span>
-                    <span class="text-gray-600">${result.pscore}/100</span>
-                </div>
-            </div>
+    function displayOpportunityLoss(data) {
+      const opportunityLossValue = document.getElementById('opportunityLossValue');
+      const opportunityBreakdown = document.getElementById('opportunityBreakdown');
+      
+      // Get scores (support both old and new field names)
+      const speedScore = data.speed || data.karpov || 0;
+      const mobileScore = data.mobile || data.nexus || 0;
+      const seoScore = data.seo || data.pulse || 0;
+      
+      // Calculate opportunity loss based on performance gaps
+      const speedGap = 100 - speedScore;
+      const mobileGap = 100 - mobileScore;
+      const seoGap = 100 - seoScore;
+      
+      // Research-backed calculations:
+      // Speed: 1% revenue per 10 points below 100
+      // Mobile: 0.5% conversion per 10 points below 100
+      // SEO: 0.3% traffic per 10 points below 100
+      
+      const speedLoss = (speedGap / 10) * 1.0;
+      const mobileLoss = (mobileGap / 10) * 0.5;
+      const seoLoss = (seoGap / 10) * 0.3;
+      
+      const totalLoss = speedLoss + mobileLoss + seoLoss;
+      
+      opportunityLossValue.textContent = totalLoss.toFixed(1) + '%';
+      opportunityLossValue.className = 'text-4xl font-bold mb-2 ' + (totalLoss > 5 ? 'text-red-600' : totalLoss > 2 ? 'text-orange-600' : 'text-green-600');
+      
+      opportunityBreakdown.innerHTML = `
+        Speed impact: ${speedLoss.toFixed(1)}% revenue loss<br>
+        Mobile impact: ${mobileLoss.toFixed(1)}% conversion loss<br>
+        SEO impact: ${seoLoss.toFixed(1)}% traffic loss<br>
+        <strong>Total estimated impact: ${totalLoss.toFixed(1)}%</strong>
+      `;
+    }
+    
+    function displayTechShortfall(data) {
+      const techShortfallValue = document.getElementById('techShortfallValue');
+      const indexBreakdown = document.getElementById('indexBreakdown');
+      const benchmarkComparison = document.getElementById('benchmarkComparison');
+      
+      const shortfall = 100 - data.pscore;
+      techShortfallValue.textContent = shortfall.toFixed(1) + '%';
+      techShortfallValue.className = 'text-4xl font-bold mb-2 ' + (shortfall > 20 ? 'text-red-600' : shortfall > 10 ? 'text-orange-600' : 'text-green-600');
+      
+      // Component definitions - support both old and new field names
+      const components = [
+        { name: 'Speed', score: data.speed || data.karpov || 0 },
+        { name: 'Mobile', score: data.mobile || data.nexus || 0 },
+        { name: 'SEO', score: data.seo || data.pulse || 0 },
+        { name: 'Interactivity', score: data.interactivity || data.tyche || 0 },
+        { name: 'Accessibility', score: data.accessibility || data.vortex || 0 },
+        { name: 'Privacy', score: data.privacy || data.helix || 0 },
+        { name: 'CDN', score: data.cdn || data.nova || 0 },
+        { name: 'Page Weight', score: data.pageWeight || data.eden || 0 },
+        { name: 'Modern Standards', score: data.modernStandards || data.aether || 0 },
+        { name: 'Code Quality', score: data.codeQuality || data.quantum || 0 },
+        { name: 'Sustainability', score: data.sustainability || data.echo || 0 }
+      ];
+      
+      // Sort by score (lowest first - these need most improvement)
+      components.sort((a, b) => a.score - b.score);
+      
+      indexBreakdown.innerHTML = components.map(comp => {
+        const gap = 100 - comp.score;
+        return `
+          <div class="flex justify-between items-center">
+            <span>${comp.name}</span>
+            <span class="${getScoreColor(comp.score)} font-semibold">
+              ${Math.round(comp.score)}/100 
+              ${gap > 20 ? '⚠️' : gap > 10 ? '⚡' : '✓'}
+            </span>
+          </div>
         `;
+      }).join('');
+      
+      // Benchmark comparison
+      const avgScore = 72; // Industry average
+      const diff = data.pscore - avgScore;
+      benchmarkComparison.innerHTML = diff > 0 
+        ? `Your site scores <strong class="text-green-600">${diff.toFixed(1)} points above</strong> the industry average (${avgScore})` 
+        : `Your site scores <strong class="text-red-600">${Math.abs(diff).toFixed(1)} points below</strong> the industry average (${avgScore})`;
+    }
+    
+    function generateFixRecommendations(data) {
+      const fixRecommendations = document.getElementById('fixRecommendations');
+      
+      // Identify top issues - support both old and new field names
+      const issues = [
+        { score: data.speed || data.karpov || 0, name: 'Speed', fix: 'Optimize images, enable compression, use CDN, minify code' },
+        { score: data.mobile || data.nexus || 0, name: 'Mobile', fix: 'Add viewport meta tag, use responsive images, enable lazy loading' },
+        { score: data.seo || data.pulse || 0, name: 'SEO', fix: 'Add meta descriptions, implement structured data, improve page titles' },
+        { score: data.interactivity || data.tyche || 0, name: 'Interactivity', fix: 'Reduce JavaScript execution time, defer non-critical scripts' },
+        { score: data.accessibility || data.vortex || 0, name: 'Accessibility', fix: 'Add alt text to images, use ARIA labels, ensure semantic HTML' },
+        { score: data.privacy || data.helix || 0, name: 'Privacy', fix: 'Enable HTTPS, add security headers (CSP, HSTS, X-Frame-Options)' },
+        { score: data.cdn || data.nova || 0, name: 'CDN', fix: 'Set up CDN, configure cache headers, enable compression' },
+        { score: data.pageWeight || data.eden || 0, name: 'Page Weight', fix: 'Compress images, remove unused code, use modern formats (WebP, AVIF)' },
+        { score: data.modernStandards || data.aether || 0, name: 'Modern Standards', fix: 'Use WebP/AVIF images, implement lazy loading, add structured data' },
+        { score: data.codeQuality || data.quantum || 0, name: 'Code Quality', fix: 'Remove blocking scripts, async/defer JavaScript, optimize CSS delivery' },
+        { score: data.sustainability || data.echo || 0, name: 'Sustainability', fix: 'Reduce page weight, optimize images, use green hosting' }
+      ];
+      
+      // Sort by score (lowest first)
+      issues.sort((a, b) => a.score - b.score);
+      
+      // Take top 5 issues
+      const topIssues = issues.slice(0, 5);
+      
+      fixRecommendations.innerHTML = topIssues.map((issue, index) => {
+        const priority = index === 0 ? '🔴 Critical' : index === 1 ? '🟠 High' : '🟡 Medium';
+        return `
+          <div class="border-l-4 ${index === 0 ? 'border-red-500' : index === 1 ? 'border-orange-500' : 'border-yellow-500'} pl-4 py-2">
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <span class="font-semibold text-sm">${priority}</span>
+                <h3 class="font-bold text-lg">${issue.name}</h3>
+              </div>
+              <span class="${getScoreColor(issue.score)} font-bold text-xl">${Math.round(issue.score)}/100</span>
+            </div>
+            <p class="text-gray-600 text-sm">${issue.fix}</p>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function getScoreColor(score) {
+      if (score >= 80) return 'text-green-600';
+      if (score >= 60) return 'text-yellow-600';
+      return 'text-red-600';
+    }
+    
+    function getRatingColor(rating) {
+      if (['AAA', 'AA', 'A'].includes(rating)) return 'text-green-600';
+      if (['BBB', 'BB', 'B'].includes(rating)) return 'text-yellow-600';
+      return 'text-red-600';
+    }
+    
+    // Allow Enter key to trigger scan
+    document.getElementById('urlInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        scanWebsite();
+      }
     });
-    html += '</div>';
-    
-    resultsDiv.innerHTML = html;
-    playSound('success');
-}
-
-// ============================================================================
-// BATTLE MODE (Compare Two Websites)
-// ============================================================================
-async function startBattle() {
-    const url1 = document.getElementById('contestant1Input').value.trim();
-    const url2 = document.getElementById('contestant2Input').value.trim();
-    
-    if (!url1 || !url2) {
-        alert('Please enter both URLs');
-        return;
-    }
-    
-    playSound('scan');
-    
-    const resultsDiv = document.getElementById('battleResults');
-    resultsDiv.classList.remove('hidden');
-    
-    document.getElementById('contestant1Results').innerHTML = `
-        <div class="modern-card bg-white rounded-lg shadow-lg p-6 text-center">
-            <p class="text-lg font-semibold text-gray-800">Scanning...</p>
-        </div>
-    `;
-    
-    document.getElementById('contestant2Results').innerHTML = `
-        <div class="modern-card bg-white rounded-lg shadow-lg p-6 text-center">
-            <p class="text-lg font-semibold text-gray-800">Scanning...</p>
-        </div>
-    `;
-    
-    document.getElementById('winnerAnnouncement').innerHTML = '';
-    
-    try {
-        // Scan both sites
-        const [data1, data2] = await Promise.all([
-            fetch('/api/scan', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: url1.startsWith('http') ? url1 : 'https://' + url1 })
-            }).then(r => r.json()),
-            fetch('/api/scan', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: url2.startsWith('http') ? url2 : 'https://' + url2 })
-            }).then(r => r.json())
-        ]);
-        
-        // Display results
-        displayBattleResult('contestant1Results', data1);
-        displayBattleResult('contestant2Results', data2);
-        
-        // Announce winner
-        const winner = data1.pscore > data2.pscore ? 
-            { name: new URL(data1.url).hostname, score: data1.pscore } : 
-            { name: new URL(data2.url).hostname, score: data2.pscore };
-        
-        const rating = pscoreToRating(winner.score);
-        
-        document.getElementById('winnerAnnouncement').innerHTML = `
-            <div class="modern-card bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-lg shadow-lg p-8">
-                <p class="text-3xl font-bold text-white mb-2">🏆 Winner: ${winner.name}</p>
-                <div class="text-6xl font-bold text-white mb-2">${rating.rating}</div>
-                <p class="text-xl text-white">P-Score: ${winner.score}/100</p>
-            </div>
-        `;
-        
-        playSound('success');
-        
-    } catch (error) {
-        console.error('Battle error:', error);
-        alert('Comparison failed: ' + error.message);
-    }
-}
-
-function displayBattleResult(divId, data) {
-    const hostname = new URL(data.url).hostname.replace('www.', '');
-    const rating = pscoreToRating(data.pscore);
-    
-    document.getElementById(divId).innerHTML = `
-        <div class="modern-card bg-white rounded-lg shadow-lg p-6">
-            <h3 class="text-xl font-bold mb-4 text-gray-800">${hostname}</h3>
-            
-            <div class="text-center mb-4">
-                <div class="credit-rating ${rating.class} mb-2">${rating.rating}</div>
-                <p class="text-gray-700">${rating.description}</p>
-            </div>
-            
-            <div class="text-center mb-4">
-                <div class="text-4xl font-bold ${data.pscore >= 80 ? 'text-green-600' : data.pscore >= 60 ? 'text-yellow-600' : 'text-red-600'}">${data.pscore}</div>
-                <p class="text-gray-600">P-Score</p>
-            </div>
-            
-            <div class="space-y-1 text-sm">
-                ${renderComponentBar('Karpov', data.karpov, 25)}
-                ${renderComponentBar('Tyche', data.tyche, 20)}
-                ${renderComponentBar('Vortex', data.vortex, 10)}
-            </div>
-        </div>
-    `;
-}
-
-// ============================================================================
-// RIVALRIES (Retro Mode Only)
-// ============================================================================
-const RIVALRIES = [
-    { name: "Search Giants", site1: "google.com", site2: "bing.com" },
-    { name: "Video Streaming", site1: "youtube.com", site2: "vimeo.com" },
-    { name: "E-Commerce", site1: "shopify.com", site2: "woocommerce.com" },
-    { name: "Cloud Storage", site1: "dropbox.com", site2: "box.com" },
-    { name: "Project Management", site1: "asana.com", site2: "trello.com" },
-    { name: "Music Streaming", site1: "spotify.com", site2: "pandora.com" },
-    { name: "News Media", site1: "bbc.com", site2: "cnn.com" },
-    { name: "Travel Booking", site1: "booking.com", site2: "expedia.com" },
-    { name: "Photo Sharing", site1: "flickr.com", site2: "500px.com" },
-    { name: "Developer Tools", site1: "github.com", site2: "gitlab.com" }
-];
-
-function loadRivalries() {
-    const list = document.getElementById('rivalriesList');
-    let html = '<div class="space-y-2">';
-    
-    RIVALRIES.forEach((rivalry, index) => {
-        html += `
-            <button 
-                onclick="battleRivalry('${rivalry.site1}', '${rivalry.site2}')" 
-                class="rivalry-item w-full p-4 bg-gray-100 hover:bg-gray-200 rounded-lg text-left transition-colors"
-            >
-                <p class="font-bold text-gray-800 mb-1">${rivalry.name}</p>
-                <p class="text-sm text-gray-600">${rivalry.site1} vs ${rivalry.site2}</p>
-            </button>
-        `;
-    });
-    
-    html += '</div>';
-    list.innerHTML = html;
-}
-
-function battleRivalry(site1, site2) {
-    document.getElementById('contestant1Input').value = site1;
-    document.getElementById('contestant2Input').value = site2;
-    navigateTo('battle');
-    setTimeout(() => startBattle(), 500);
-}
-
-// ============================================================================
-// INITIALIZATION
-// ============================================================================
-window.addEventListener('DOMContentLoaded', () => {
-    console.log('Pythia: The Digital Health Rating Agency initialized');
-    console.log('Mode: Professional (use Retro Mode toggle for classic experience)');
-});
-</script>
+  </script>
 
 </body>
 </html>
