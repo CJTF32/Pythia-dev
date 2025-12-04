@@ -84,13 +84,6 @@
         <div class="card rounded-lg shadow-xl p-8 max-w-md mx-4" onclick="event.stopPropagation()">
           <h2 class="text-2xl font-bold text-gray-800 mb-4">Manual Scan Required</h2>
           <p class="text-gray-600 mb-6">This site blocks automated scans. Request a manual professional audit for $275.</p>
-
-          <!-- ADD THIS ENTIRE SECTION HERE: -->
-          <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
-            <p class="text-sm text-indigo-800 font-semibold mb-2">🚀 Test Mode</p>
-            <p class="text-sm text-indigo-700">Payment system is in test mode. Real payments will be enabled after our Product Hunt launch. For now, submit your request to cronixholdings@gmail.com and we'll contact you directly.</p>
-          </div>
-          <!-- END OF NEW SECTION -->
           
           <form id="manualScanForm" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
             <input type="hidden" name="scan_type" value="manual">
@@ -480,7 +473,7 @@
 
       <div class="card rounded-lg shadow-md p-8 mb-8 bg-purple-50">
         <h3 class="text-2xl font-bold text-purple-800 mb-4">Manual Audit Service</h3>
-        <p class="text-gray-700 mb-4">Sites that block scans (e.g. Meta): $275 per manual audit, 24-hour turnaround, expert recommendations.</p>
+        <p class="text-gray-700 mb-4">Sites that block scans (Meta, Twitter/X): $275 per manual audit, 24-hour turnaround, expert recommendations.</p>
         <button onclick="scrollToSection('home')" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Request Manual Scan</button>
       </div>
       
@@ -591,6 +584,11 @@
     function toggleExpand(id) {
       const element = document.getElementById(id);
       element.classList.toggle('expanded');
+  
+    // Show tech PDF button when techDetails is expanded
+      if (id === 'techDetails' && element.classList.contains('expanded')) {
+      document.getElementById('techPdfBtn').classList.remove('hidden');
+      }
     }
     
     function showManualScanModal(url) {
@@ -1130,7 +1128,7 @@
       doc.setFontSize(10);
       doc.text('Sector Average: [Pending Top 1000 Study]', 20, y);
       y += 6;
-      doc.text('General Average: 73.0 P-Score (estimated)', 20, y);
+      doc.text('General Average: ~72 P-Score (estimated)', 20, y);
       y += 6;
       doc.text('Top 10% Threshold: ~90+ P-Score', 20, y);
       y += 15;
@@ -1319,14 +1317,17 @@ document.addEventListener('keydown', (event) => {
             // Main Scan Input
             event.preventDefault(); 
             scanWebsite();
-        } else if (targetId === 'competitorUrl') {
-            // Opportunity Loss competitor input
+        } else if (targetId === 'comparisonUrlInput') {
+            // Comparison Modal Input (Assuming this is the correct ID)
             event.preventDefault(); 
-            scanCompetitor(); 
-        } else if (targetId === 'techCompetitorUrl') {
-            // Tech Shortfall competitor input
-            event.preventDefault(); 
-            scanTechCompetitor();
+            scanComparisonWebsite(); 
+        } 
+        
+        // FALLBACK: Check if the focused element is an <input> inside the comparison modal
+        // This is a defensive check in case the element ID is missing or different.
+        else if (targetElement.tagName === 'INPUT' && targetElement.placeholder.includes('competitor')) {
+            event.preventDefault();
+            scanComparisonWebsite();
         }
     }
 });
