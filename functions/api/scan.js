@@ -1,918 +1,363 @@
-// Pythia Scan Engine - REVISED WITH CORRECT WEIGHTS & GRANULAR SCORING
-// Fixed: Weights now sum to 100%, granular continuous scoring
-
 // ============================================================================
-// SECTOR CLASSIFICATION
+// PYTHIA SCAN ENGINE - Research-Backed Weights + Sustainability
 // ============================================================================
-function classifySector(domain) {
-  const lowDomain = domain.toLowerCase();
-  
-  const patterns = {
-    'E-commerce': ['amazon', 'ebay', 'walmart', 'shop', 'store', 'buy', 'cart', 'etsy', 
-                   'alibaba', 'target', 'bestbuy', 'costco', 'ikea', 'wayfair', 'zappos',
-                   'nike', 'adidas', 'gap', 'zara', 'hm'],
-    'Social Media': ['facebook', 'twitter', 'instagram', 'linkedin', 'reddit', 'pinterest',
-                     'snapchat', 'tiktok', 'whatsapp', 'telegram', 'discord'],
-    'Technology': ['microsoft', 'apple', 'github', 'gitlab', 'stack', 'npm', 'docker',
-                   'cloudflare', 'aws', 'azure', 'salesforce', 'adobe', 'slack', 'notion'],
-    'Media & Entertainment': ['netflix', 'hulu', 'disney', 'hbo', 'spotify', 'youtube',
-                              'twitch', 'vimeo', 'imdb', 'soundcloud'],
-    'News & Media': ['news', 'times', 'post', 'journal', 'cnn', 'bbc', 'guardian', 'reuters',
-                     'bloomberg', 'forbes', 'wired', 'verge'],
-    'Healthcare': ['health', 'medical', 'hospital', 'clinic', 'doctor', 'mayo', 'webmd'],
-    'Financial Services': ['bank', 'finance', 'trading', 'invest', 'paypal', 'stripe',
-                          'coinbase', 'robinhood', 'chase', 'wellsfargo'],
-    'Education': ['edu', 'university', 'college', 'school', 'learning', 'coursera', 'udemy'],
-    'Government': ['.gov', 'government'],
-    'Travel & Hospitality': ['travel', 'hotel', 'booking', 'airbnb', 'expedia', 'trip'],
-    'Real Estate': ['zillow', 'realtor', 'redfin', 'trulia', 'apartment', 'rent'],
-    'Food & Beverage': ['restaurant', 'food', 'delivery', 'grubhub', 'doordash', 'starbucks']
-  };
-  
-  for (const [sector, keywords] of Object.entries(patterns)) {
-    for (const keyword of keywords) {
-      if (lowDomain.includes(keyword)) {
-        return sector;
-      }
-    }
-  }
-  
-  return 'Other';
-}
+// Weights based on revenue impact research from Amazon, Walmart, Google, etc.
+// Sustainability based on Sustainable Web Design + Green Web Foundation
+// ============================================================================
 
-function getSectorSpecificSummary(mscore, loss, sector) {
-  const realized = Math.round(mscore);
-  const lossRounded = loss.toFixed(0);
+export async function onRequestPost(context) {
+  const { request, env } = context;
   
-  const summaries = {
-    'E-commerce': {
-      high: `Exceptional performance. You're capturing ~${realized}% of potential revenue.`,
-      good: `Strong performance. You're realizing ${realized}% of revenue potential.`,
-      medium: `You're realizing ${realized}% of potential revenue. ~${lossRounded}% lost to cart abandonment and slow checkout.`,
-      low: `Critical issues. You're losing ~${lossRounded}% of potential revenue to performance problems.`
-    },
-    'SaaS': {
-      high: `Exceptional conversion efficiency. ${realized}% trial-to-paid conversion rate.`,
-      good: `Strong conversion rate. ${realized}% of trials convert to paid.`,
-      medium: `${realized}% trial conversion efficiency. ~${lossRounded}% lost to signup friction.`,
-      low: `Poor conversion. ${lossRounded}% of trials abandon before paying.`
-    },
-    'Technology': {
-      high: `Exceptional. ${realized}% download/signup completion rate.`,
-      good: `Strong performance. ${realized}% conversion on downloads/signups.`,
-      medium: `${realized}% completion rate. ~${lossRounded}% abandon before download/signup.`,
-      low: `${lossRounded}% abandon before completing downloads or signups.`
-    },
-    'Financial Services': {
-      high: `Exceptional account opening rate. ${realized}% complete signup.`,
-      good: `Strong signup flow. ${realized}% complete account opening.`,
-      medium: `${realized}% account opening completion. ~${lossRounded}% drop off in signup funnel.`,
-      low: `${lossRounded}% abandon signup process. Critical friction in account opening.`
-    },
-    'Government': {
-      high: `Exceptional service delivery. ${realized}% complete online services.`,
-      good: `Strong service completion. ${realized}% of citizens complete online forms.`,
-      medium: `${realized}% service completion. ~${lossRounded}% abandon online → call center costs.`,
-      low: `${lossRounded}% abandon online services, significantly increasing support costs.`
-    },
-    'Healthcare': {
-      high: `Exceptional patient experience. ${realized}% complete appointment booking.`,
-      good: `Strong booking flow. ${realized}% complete online appointments.`,
-      medium: `${realized}% booking completion. ~${lossRounded}% abandon appointment forms.`,
-      low: `${lossRounded}% abandon booking process. Losing significant patient acquisition.`
-    },
-    'Education': {
-      high: `Exceptional enrollment rate. ${realized}% complete applications.`,
-      good: `Strong application flow. ${realized}% complete enrollment.`,
-      medium: `${realized}% application completion. ~${lossRounded}% of prospective students drop off.`,
-      low: `${lossRounded}% application abandonment. Critical enrollment funnel issues.`
-    },
-    'Travel & Hospitality': {
-      high: `Exceptional booking rate. ${realized}% complete reservations.`,
-      good: `Strong booking flow. ${realized}% complete purchases.`,
-      medium: `${realized}% booking completion. ~${lossRounded}% cart abandonment.`,
-      low: `${lossRounded}% abandon bookings. Significant revenue loss from cart abandonment.`
-    },
-    'Real Estate': {
-      high: `Exceptional lead generation. ${realized}% complete contact forms.`,
-      good: `Strong lead capture. ${realized}% submit contact information.`,
-      medium: `${realized}% lead conversion. ~${lossRounded}% abandon contact forms.`,
-      low: `${lossRounded}% abandon lead forms. Significant lead generation loss.`
-    },
-    'Food & Beverage': {
-      high: `Exceptional order rate. ${realized}% complete online orders.`,
-      good: `Strong checkout flow. ${realized}% complete orders.`,
-      medium: `${realized}% order completion. ~${lossRounded}% delivery cart abandonment.`,
-      low: `${lossRounded}% abandon orders. Critical issues in checkout flow.`
-    },
-    'News & Media': {
-      high: `Exceptional engagement. ${realized}% pageview retention.`,
-      good: `Strong content delivery. ${realized}% visitors engage with content.`,
-      medium: `${realized}% engagement rate. ~${lossRounded}% lost to bounce and slow load.`,
-      low: `${lossRounded}% bounce rate. Significant ad revenue loss from poor performance.`
-    },
-    'Media & Entertainment': {
-      high: `Exceptional engagement. ${realized}% content completion.`,
-      good: `Strong user retention. ${realized}% engage with content.`,
-      medium: `${realized}% engagement rate. ~${lossRounded}% lost to bounce (ad revenue impact).`,
-      low: `${lossRounded}% bounce rate. Critical revenue loss from poor performance.`
-    },
-    'Other': {
-      high: `Exceptional performance. ${realized}% conversion efficiency.`,
-      good: `Strong digital performance. ${realized}% achieving goals.`,
-      medium: `${realized}% conversion rate. ~${lossRounded}% opportunity loss from performance issues.`,
-      low: `${lossRounded}% opportunity loss. Critical performance issues blocking conversions.`
-    }
-  };
-  
-  const sectorSummaries = summaries[sector] || summaries['Other'];
-  
-  if (mscore >= 90) return sectorSummaries.high;
-  if (mscore >= 75) return sectorSummaries.good;
-  if (mscore >= 60) return sectorSummaries.medium;
-  return sectorSummaries.low;
-}
-
-export async function onRequest(context) {
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Content-Type': 'application/json'
-  };
-
-  if (context.request.method === 'OPTIONS') {
-    return new Response(null, { status: 200, headers: corsHeaders });
-  }
-
-  if (context.request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Only POST allowed' }), {
-      status: 405,
-      headers: corsHeaders
-    });
-  }
-
   try {
-    const { url, sector } = await context.request.json();
+    const { url } = await request.json();
     
-    if (!url || typeof url !== 'string' || url.trim() === '') {
-      return new Response(JSON.stringify({ error: 'Valid URL string required' }), {
+    if (!url) {
+      return new Response(JSON.stringify({ error: 'URL is required' }), {
         status: 400,
-        headers: corsHeaders
+        headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    const cleanUrl = url.trim();
-    const fullUrl = cleanUrl.startsWith('http') ? cleanUrl : `https://${cleanUrl}`;
+    // Helper function to clamp scores between 0-100
+    const clamp = (value) => Math.max(0, Math.min(100, value));
     
-    let hostname;
-    try {
-      hostname = new URL(fullUrl).hostname.replace('www.', '');
-    } catch (urlError) {
-      return new Response(JSON.stringify({ 
-        error: 'Invalid URL format',
-        details: `Could not parse URL: ${cleanUrl}`,
-        hint: 'Try format like: example.com or https://example.com'
-      }), {
-        status: 400,
-        headers: corsHeaders
-      });
-    }
-    
-    const timestamp = new Date().toISOString();
-    
-    // Auto-detect sector from domain (or use provided sector)
-    const detectedSector = sector || classifySector(hostname);
-    
-    // ============================================================================
-    // STEP 1: CHECK D1 CACHE (24 hour TTL)
-    // ============================================================================
-    if (context.env.DB) {
-      try {
-        const cached = await context.env.DB.prepare(
-          `SELECT * FROM precomputed_scores 
-           WHERE hostname = ?
-           AND datetime(last_updated) > datetime('now', '-24 hours')`
-        ).bind(hostname).first();
-        
-        if (cached) {
-          const scoreData = JSON.parse(cached.score_data);
-          return new Response(JSON.stringify({
-            ...scoreData,
-            cached: true,
-            cacheAge: cached.last_updated
-          }), {
-            status: 200,
-            headers: corsHeaders
-          });
-        }
-      } catch (e) {
-        console.error('D1 lookup failed:', e);
-      }
-    }
-    
-    // ============================================================================
-    // STEP 2: HTTP FETCH
-    // ============================================================================
-    let html = '';
-    let responseHeaders = new Headers();
-    let loadTime = 0;
-    let ttfb = 0;
-    let scanMethod = 'fetch';
-    let finalUrl = fullUrl;
-    
-    const fetchStart = Date.now();
-    
-    try {
-      const response = await fetch(fullUrl, {
-        method: 'GET',
-        redirect: 'follow',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Accept-Encoding': 'gzip, deflate, br',
-          'DNT': '1',
-          'Connection': 'keep-alive',
-          'Upgrade-Insecure-Requests': '1'
-        },
-        signal: AbortSignal.timeout(10000)
-      });
-      
-      ttfb = Date.now() - fetchStart;
-      responseHeaders = response.headers;
-      finalUrl = response.url;
-      html = await response.text();
-      loadTime = Date.now() - fetchStart;
-      
-      if (!response.ok && response.status !== 403 && response.status !== 429) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-    } catch (fetchError) {
-      // Try browser rendering if available
-      if (context.env.MYBROWSER) {
-        try {
-          scanMethod = 'browser';
-          const { default: puppeteer } = await import('@cloudflare/puppeteer');
-          
-          const browserStart = Date.now();
-          const browser = await puppeteer.launch(context.env.MYBROWSER);
-          const page = await browser.newPage();
-          
-          await page.setViewport({ width: 1920, height: 1080 });
-          await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-          
-          await page.goto(fullUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-          
-          html = await page.content();
-          finalUrl = page.url();
-          ttfb = Date.now() - browserStart;
-          loadTime = ttfb;
-          
-          await browser.close();
-          
-        } catch (browserError) {
-          return new Response(JSON.stringify({
-            error: 'Scan failed',
-            details: 'Site blocked automated scanning',
-            hostname,
-            timestamp
-          }), {
-            status: 503,
-            headers: corsHeaders
-          });
-        }
-      } else {
-        return new Response(JSON.stringify({
-          error: 'Scan failed',
-          details: fetchError.message,
-          hostname,
-          timestamp
-        }), {
-          status: 503,
-          headers: corsHeaders
-        });
-      }
-    }
-    
-    // ============================================================================
-    // STEP 3: ANALYZE HTML (Server-Side Compatible)
-    // ============================================================================
-    
-    const analysis = {
-      // Meta tags
-      hasViewport: /<meta[^>]*name=["']viewport["']/i.test(html),
-      hasDescription: /<meta[^>]*name=["']description["']/i.test(html),
-      hasTitle: /<title[^>]*>([^<]+)<\/title>/i.test(html),
-      titleMatch: html.match(/<title[^>]*>([^<]+)<\/title>/i),
-      hasH1: /<h1[^>]*>/i.test(html),
-      hasStructuredData: /<script[^>]*type=["']application\/ld\+json["']/i.test(html),
-      hasCanonical: /<link[^>]*rel=["']canonical["']/i.test(html),
-      
-      // Open Graph
-      ogTags: (html.match(/<meta[^>]*property=["']og:/gi) || []).length,
-      
-      // Resources
-      scriptCount: (html.match(/<script[^>]*>/gi) || []).length,
-      cssCount: (html.match(/<link[^>]*rel=["']stylesheet["']/gi) || []).length,
-      imgCount: (html.match(/<img[^>]*>/gi) || []).length,
-      
-      // Blocking resources
-      blockingScripts: (html.match(/<script(?![^>]*(?:async|defer))[^>]*src=/gi) || []).length,
-      blockingCSS: (html.match(/<link[^>]*rel=["']stylesheet["'](?![^>]*media=["']print["'])[^>]*>/gi) || []).length,
-      
-      // Modern features
-      hasWebP: /\.webp["']/i.test(html),
-      hasAVIF: /\.avif["']/i.test(html),
-      hasLazyLoading: /loading=["']lazy["']/i.test(html),
-      
-      // Accessibility
-      hasAlt: /<img[^>]*alt=/i.test(html),
-      hasAriaLabels: /aria-label=/i.test(html),
-      hasLang: /<html[^>]*lang=/i.test(html),
-      
-      // Security
-      hasHTTPS: fullUrl.startsWith('https://'),
-      
-      // Third-party
-      hasGoogleAnalytics: /google-analytics\.com|googletagmanager\.com/i.test(html),
-      hasFacebookPixel: /facebook\.com\/tr\?id=/i.test(html),
-      thirdPartyCount: (html.match(/google-analytics|googletagmanager|facebook\.com|doubleclick|connect\.facebook|googleadservices/gi) || []).length,
-      
-      // Size
-      contentLength: html.length,
-      sizeMB: html.length / (1024 * 1024),
-      
-      // Total resources
-      resourceCount: (html.match(/<script[^>]*>/gi) || []).length + 
-                     (html.match(/<link[^>]*>/gi) || []).length +
-                     (html.match(/<img[^>]*>/gi) || []).length
-    };
-    
-    // Title analysis
-    const titleLength = analysis.titleMatch ? analysis.titleMatch[1].length : 0;
-    
-    // ============================================================================
-    // STEP 4: CALCULATE SCORES (GRANULAR & CONTINUOUS)
-    // ============================================================================
-    
-    // Helper: Smooth interpolation between points
-    function smoothScore(value, points) {
-      // points = [[threshold, score], [threshold, score], ...]
-      // Returns continuous score between points
+    // Helper function for smooth score interpolation
+    const smoothScore = (value, points) => {
       for (let i = 0; i < points.length - 1; i++) {
-        const [t1, s1] = points[i];
-        const [t2, s2] = points[i + 1];
-        if (value >= t1 && value <= t2) {
-          const ratio = (value - t1) / (t2 - t1);
-          return s1 + (s2 - s1) * ratio;
+        const [x1, y1] = points[i];
+        const [x2, y2] = points[i + 1];
+        
+        if (value >= x1 && value <= x2) {
+          const ratio = (value - x1) / (x2 - x1);
+          return y1 + (y2 - y1) * ratio;
         }
       }
-      // Before first or after last point
-      if (value < points[0][0]) return points[0][1];
+      
+      if (value <= points[0][0]) return points[0][1];
       return points[points.length - 1][1];
+    };
+
+    // Normalize URL
+    let targetUrl = url.trim();
+    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+      targetUrl = 'https://' + targetUrl;
     }
+
+    // Fetch the website
+    const startTime = Date.now();
+    const response = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    const loadTime = Date.now() - startTime;
     
-    // Helper: Clamp to 0-100
-    function clamp(score) {
-      return Math.max(0, Math.min(100, score));
+    if (!response.ok) {
+      return new Response(JSON.stringify({ 
+        error: `Failed to fetch: ${response.status}` 
+      }), {
+        status: 502,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
+
+    const html = await response.text();
+    const responseHeaders = response.headers;
     
+    // Calculate page size
+    const sizeBytes = new Blob([html]).size;
+    const sizeMB = sizeBytes / (1024 * 1024);
+    
+    // Initialize analysis object
+    const analysis = {
+      loadTime,
+      sizeMB,
+      hasHTTPS: targetUrl.startsWith('https://'),
+      hasMeta: /<meta/i.test(html),
+      hasViewport: /<meta[^>]*viewport/i.test(html),
+      hasTitle: /<title[^>]*>([^<]+)<\/title>/i.test(html),
+      hasDescription: /<meta[^>]*name=["']description["'][^>]*>/i.test(html),
+      hasOG: /<meta[^>]*property=["']og:/i.test(html),
+      hasAltText: /<img[^>]*alt=["'][^"']+["']/i.test(html),
+      hasAriaLabels: /aria-label/i.test(html),
+      hasWebP: /\.webp/i.test(html),
+      hasAVIF: /\.avif/i.test(html),
+      hasLazyLoading: /loading=["']lazy["']/i.test(html),
+      hasStructuredData: /<script[^>]*type=["']application\/ld\+json["']/i.test(html),
+      resourceCount: (html.match(/<script|<link|<img|<style/gi) || []).length,
+      blockingScripts: (html.match(/<script(?![^>]*async)(?![^>]*defer)/gi) || []).length,
+      blockingCSS: (html.match(/<link[^>]*rel=["']stylesheet["'](?![^>]*media=["']print["'])/gi) || []).length
+    };
+
+    // Privacy/Security headers
+    analysis.hasCSP = responseHeaders.has('content-security-policy');
+    analysis.hasXFrameOptions = responseHeaders.has('x-frame-options');
+    analysis.hasHSTS = responseHeaders.has('strict-transport-security');
+    analysis.hasPermissionsPolicy = responseHeaders.has('permissions-policy');
+
+    // Initialize result object
     const result = {};
-    
-    // 1. KARPOV: Speed (25% weight) - Physics-Aware
-    const renderingTime = Math.max(0, loadTime - ttfb);
-    
-    // Score TTFB (continuous, not discrete)
-    const ttfbScore = smoothScore(ttfb, [
-      [0, 100],      // 0ms = perfect
-      [100, 95],     // 100ms = excellent
-      [200, 90],     // 200ms = great
-      [400, 75],     // 400ms = good
-      [600, 60],     // 600ms = acceptable
-      [800, 45],     // 800ms = slow
-      [1000, 30],    // 1s = poor
-      [2000, 10],    // 2s = very poor
-      [5000, 0]      // 5s+ = failure
-    ]);
-    
-    // Adjust rendering for blocking resources (granular penalties)
-    let adjustedRenderTime = renderingTime;
-    adjustedRenderTime += (analysis.blockingScripts * 75);  // More granular
-    adjustedRenderTime += (analysis.blockingCSS * 40);
-    
-    // Score rendering (continuous curve)
-    const RENDER_BASELINE = scanMethod === 'browser' ? 1500 : 800;
-    const renderScore = smoothScore(adjustedRenderTime, [
+
+    // ========================================================================
+    // CALCULATE 11 COMPONENT SCORES
+    // ========================================================================
+
+    // 1. SPEED - 30% weight
+    // Physics-aware: Apply 200ms baseline for network latency
+    const adjustedLoadTime = Math.max(0, loadTime - 200);
+    const karpovScore = smoothScore(adjustedLoadTime, [
       [0, 100],
-      [RENDER_BASELINE * 0.5, 100],    // Half baseline = perfect
-      [RENDER_BASELINE, 90],            // At baseline = great
-      [RENDER_BASELINE * 1.5, 75],     // 1.5x baseline = good
-      [RENDER_BASELINE * 2, 60],       // 2x baseline = acceptable
-      [RENDER_BASELINE * 3, 40],       // 3x baseline = poor
-      [RENDER_BASELINE * 5, 20],       // 5x baseline = very poor
-      [RENDER_BASELINE * 8, 5],        // 8x baseline = critical
-      [RENDER_BASELINE * 10, 0]        // 10x+ baseline = failure
+      [300, 95],
+      [500, 90],
+      [800, 85],
+      [1000, 80],
+      [1500, 70],
+      [2000, 60],
+      [3000, 40],
+      [5000, 20],
+      [10000, 0]
     ]);
+    result.speed = clamp(karpovScore);
+
+    // 2. MOBILE - 18% weight
+    let nexusScore = 0;
+    if (analysis.hasViewport) nexusScore += 40;
     
-    // Composite: 65% rendering (controllable) + 35% network (infrastructure)
-    result.karpov = clamp((renderScore * 0.65) + (ttfbScore * 0.35));
+    // Responsive images
+    if (analysis.hasWebP || analysis.hasAVIF) nexusScore += 25;
+    if (analysis.hasLazyLoading) nexusScore += 15;
     
-    // 2. TYCHE: Interactivity (18% weight) - Granular penalties
-    let tycheScore = 100; // Start at perfect
+    // Mobile-friendly size
+    if (sizeMB < 2) nexusScore += 20;
+    else if (sizeMB < 5) nexusScore += 10;
     
-    // Third-party scripts (exponential penalty for many trackers)
-    tycheScore -= analysis.thirdPartyCount * 3.5;
+    result.mobile = clamp(nexusScore);
+
+    // 3. SEO - 13% weight
+    let pulseScore = 0;
+    if (analysis.hasTitle) pulseScore += 25;
+    if (analysis.hasDescription) pulseScore += 25;
+    if (analysis.hasOG) pulseScore += 20;
+    if (analysis.hasStructuredData) pulseScore += 15;
+    if (analysis.hasHTTPS) pulseScore += 15;
     
-    // Blocking scripts (severe penalty)
-    tycheScore -= analysis.blockingScripts * 4.2;
-    
-    // Resource count penalty (too many resources slow interactivity)
-    if (analysis.resourceCount > 150) {
-      tycheScore -= (analysis.resourceCount - 150) * 0.15;
-    }
-    
-    result.tyche = clamp(tycheScore);
-    
-    // 3. VORTEX: Accessibility (15% weight) - Granular scoring
-    let vortexScore = 0;
-    
-    // Images with alt text (critical)
-    if (analysis.imgCount > 0) {
-      vortexScore += analysis.hasAlt ? 22 : 0;
-    } else {
-      vortexScore += 10; // Bonus for no images (no accessibility issues)
-    }
-    
-    // ARIA labels (important for screen readers)
-    if (analysis.hasAriaLabels) vortexScore += 20;
-    
-    // Language attribute (required for screen readers)
-    if (analysis.hasLang) vortexScore += 18;
-    
-    // Heading structure (critical for navigation)
-    if (analysis.hasH1) vortexScore += 16;
-    
-    // Title (screen reader announcement)
-    if (analysis.hasTitle) vortexScore += 14;
-    
-    // Bonus for good viewport (mobile accessibility)
+    result.seo = clamp(pulseScore);
+
+    // 4. INTERACTIVITY - 10% weight
+    const tycheScore = smoothScore(loadTime, [
+      [0, 100],
+      [100, 95],
+      [300, 90],
+      [500, 85],
+      [1000, 75],
+      [2000, 60],
+      [3000, 40],
+      [5000, 20],
+      [10000, 0]
+    ]);
+    result.interactivity = clamp(tycheScore);
+
+    // 5. ACCESSIBILITY - 10% weight
+    let vortexScore = 20; // Base for valid HTML
+    if (analysis.hasAltText) vortexScore += 40;
+    if (analysis.hasAriaLabels) vortexScore += 30;
     if (analysis.hasViewport) vortexScore += 10;
     
-    result.vortex = clamp(vortexScore);
+    result.accessibility = clamp(vortexScore);
+
+    // 6. PRIVACY - 6% weight
+    let helixScore = 0;
+    if (analysis.hasHTTPS) helixScore += 40;
+    if (analysis.hasCSP) helixScore += 20;
+    if (analysis.hasXFrameOptions) helixScore += 15;
+    if (analysis.hasHSTS) helixScore += 15;
+    if (analysis.hasPermissionsPolicy) helixScore += 10;
     
-    // 4. NEXUS: Mobile (12% weight) - Granular mobile scoring
-    let nexusScore = 0;
-    
-    // Viewport (essential for mobile)
-    if (analysis.hasViewport) nexusScore += 35;
-    
-    // Image optimization for mobile
-    if (analysis.imgCount > 0 && analysis.hasAlt) nexusScore += 15;
-    if (analysis.hasLazyLoading) nexusScore += 18;
-    if (analysis.hasWebP || analysis.hasAVIF) nexusScore += 12;
-    
-    // Mobile speed (continuous scoring)
-    const mobileSpeed = smoothScore(loadTime, [
-      [0, 20],
-      [1000, 20],    // <1s = perfect
-      [2000, 15],    // <2s = good
-      [3000, 10],    // <3s = acceptable
-      [4000, 5],     // <4s = poor
-      [5000, 0]      // 5s+ = failure
-    ]);
-    nexusScore += mobileSpeed;
-    
-    result.nexus = clamp(nexusScore);
-    
-    // 5. HELIX: Privacy (10% weight) - Granular privacy scoring
-    let helixScore = 50; // Baseline
-    
-    // HTTPS (essential)
-    if (analysis.hasHTTPS) helixScore += 25;
-    
-    // No Google Analytics (privacy-focused)
-    if (!analysis.hasGoogleAnalytics) helixScore += 12.5;
-    
-    // No Facebook Pixel (privacy-focused)
-    if (!analysis.hasFacebookPixel) helixScore += 12.5;
-    
-    // Fewer third-party trackers = better privacy
-    const trackerPenalty = Math.min(25, analysis.thirdPartyCount * 2.5);
-    helixScore -= trackerPenalty;
-    
-    result.helix = clamp(helixScore);
-    
-    // 6. PULSE: SEO (10% weight) - Granular SEO scoring
-    let pulseScore = 0;
-    
-    // Title tag (critical)
-    if (analysis.hasTitle) {
-      pulseScore += 18;
-      // Title length optimization (continuous curve)
-      if (titleLength > 0) {
-        const titleQuality = smoothScore(titleLength, [
-          [0, 0],
-          [20, 5],     // Too short
-          [30, 10],    // Good start
-          [50, 12],    // Optimal
-          [60, 10],    // Good end
-          [70, 5],     // Too long
-          [100, 0]     // Way too long
-        ]);
-        pulseScore += titleQuality;
-      }
-    }
-    
-    // Meta description (important)
-    if (analysis.hasDescription) pulseScore += 18;
-    
-    // Structured data (important for rich snippets)
-    if (analysis.hasStructuredData) pulseScore += 15;
-    
-    // Canonical (important for duplicate content)
-    if (analysis.hasCanonical) pulseScore += 12;
-    
-    // Open Graph tags (social media optimization)
-    const ogScore = smoothScore(analysis.ogTags, [
-      [0, 0],
-      [4, 10],    // Basic OG tags
-      [8, 12],    // Comprehensive OG
-      [15, 12]    // Lots of OG (no more benefit)
-    ]);
-    pulseScore += ogScore;
-    
-    // Core Web Vitals correlation (speed helps SEO)
-    if (result.karpov >= 80) pulseScore += 8;
-    else if (result.karpov >= 60) pulseScore += 4;
-    
-    result.pulse = clamp(pulseScore);
-    
-    // 7. NOVA: CDN & Caching (7% weight) - Granular infrastructure scoring
+    result.privacy = clamp(helixScore);
+
+    // 7. CDN - 5% weight
     let novaScore = 0;
+    const cdnHeaders = responseHeaders.get('cf-ray') || 
+                       responseHeaders.get('x-amz-cf-id') ||
+                       responseHeaders.get('x-cache');
     
-    // CDN detection (major performance boost)
-    const isCDN = responseHeaders.get('cf-ray') || 
-                  responseHeaders.get('x-cache') || 
-                  responseHeaders.get('x-amz-cf-id');
-    if (isCDN) novaScore += 45;
+    if (cdnHeaders) novaScore += 50;
     
-    // Cache headers (important for repeat visits)
     const cacheControl = responseHeaders.get('cache-control');
     if (cacheControl) {
-      novaScore += 30;
-      // Bonus for good cache directives
-      if (cacheControl.includes('max-age=')) novaScore += 5;
+      if (cacheControl.includes('max-age')) novaScore += 30;
+      if (cacheControl.includes('public')) novaScore += 10;
+      if (cacheControl.includes('immutable')) novaScore += 10;
     }
     
-    // Compression (critical for bandwidth)
-    const compression = responseHeaders.get('content-encoding');
-    if (compression === 'br') novaScore += 20;       // Brotli = best
-    else if (compression === 'gzip') novaScore += 15; // Gzip = good
-    else if (compression) novaScore += 10;            // Some compression
-    
-    result.nova = clamp(novaScore);
-    
-    // 8. EDEN: Page Weight (6% weight) - Continuous weight penalty
-    const edenScore = smoothScore(analysis.sizeMB, [
-      [0, 100],      // 0 MB = perfect
-      [0.5, 95],     // 500 KB = excellent
-      [1, 90],       // 1 MB = great
-      [2, 80],       // 2 MB = good
-      [3, 70],       // 3 MB = acceptable
-      [5, 50],       // 5 MB = heavy
-      [10, 25],      // 10 MB = very heavy
-      [20, 10],      // 20 MB = bloated
-      [50, 0]        // 50+ MB = failure
+    result.cdn = clamp(novaScore);
+
+    // 8. PAGE WEIGHT - 4% weight
+    const edenScore = smoothScore(sizeMB, [
+      [0, 100],
+      [0.5, 95],
+      [1, 90],
+      [2, 80],
+      [3, 70],
+      [5, 50],
+      [10, 25],
+      [20, 10],
+      [50, 0]
     ]);
-    
-    result.eden = clamp(edenScore);
-    
-    // 9. AETHER: Modern Tech (4% weight) - Granular modern features
+    result.pageWeight = clamp(edenScore);
+
+    // 9. MODERN STANDARDS - 2% weight
     let aetherScore = 0;
-    
-    // Next-gen image formats
-    if (analysis.hasAVIF) aetherScore += 35;       // AVIF = cutting edge
-    else if (analysis.hasWebP) aetherScore += 30;  // WebP = modern
-    
-    // Lazy loading (modern performance technique)
+    if (analysis.hasAVIF) aetherScore += 35;
+    else if (analysis.hasWebP) aetherScore += 30;
     if (analysis.hasLazyLoading) aetherScore += 30;
-    
-    // Modern viewport (responsive design)
     if (analysis.hasViewport) aetherScore += 20;
-    
-    // Structured data (modern SEO)
     if (analysis.hasStructuredData) aetherScore += 15;
     
-    result.aether = clamp(aetherScore);
+    result.modernStandards = clamp(aetherScore);
+
+    // 10. CODE QUALITY - 1% weight
+    let quantumScore = 60; // Baseline
     
-    // 10. QUANTUM: Code Quality (3% weight) - Granular code quality
-    let quantumScore = 60; // Baseline for working code
-    
-    // No blocking scripts (best practice)
     if (analysis.blockingScripts === 0) {
       quantumScore += 20;
     } else {
-      // Gradual penalty for blocking scripts
       quantumScore -= Math.min(20, analysis.blockingScripts * 3);
     }
     
-    // No blocking CSS (best practice)
     if (analysis.blockingCSS === 0) {
       quantumScore += 20;
     } else {
-      // Gradual penalty for blocking CSS
       quantumScore -= Math.min(15, analysis.blockingCSS * 2.5);
     }
     
-    // Bonus for lean codebase
     if (analysis.resourceCount < 50) quantumScore += 10;
-    else if (analysis.resourceCount > 150) quantumScore -= Math.min(10, (analysis.resourceCount - 150) * 0.1);
+    else if (analysis.resourceCount > 150) {
+      quantumScore -= Math.min(10, (analysis.resourceCount - 150) * 0.1);
+    }
     
-    result.quantum = clamp(quantumScore);
-    
-    // 11. ECHO: Sustainability (1% weight) - Environmental impact
-    // Based on Sustainable Web Design methodology and Green Web Foundation research
+    result.codeQuality = clamp(quantumScore);
+
+    // 11. SUSTAINABILITY - 1% weight
     let echoScore = 0;
     
-    // 1. Page Weight Efficiency (40 points max)
-    // Based on 2.4 MB global average threshold
-    const weightScore = smoothScore(analysis.sizeMB, [
-      [0, 40],       // 0 MB = perfect
-      [0.5, 38],     // 500 KB = excellent
-      [1, 35],       // 1 MB = great
-      [2, 28],       // 2 MB = good
-      [2.4, 25],     // 2.4 MB = global average
-      [3, 20],       // 3 MB = above average
-      [5, 10],       // 5 MB = heavy
-      [10, 5],       // 10 MB = very heavy
-      [20, 2],       // 20 MB = bloated
-      [50, 0]        // 50+ MB = failure
+    // Page Weight Efficiency (40 points max)
+    const weightScore = smoothScore(sizeMB, [
+      [0, 40],
+      [0.5, 38],
+      [1, 35],
+      [2, 28],
+      [2.4, 25],
+      [3, 20],
+      [5, 10],
+      [10, 5],
+      [20, 2],
+      [50, 0]
     ]);
     echoScore += weightScore;
     
-    // 2. Green Hosting Detection (25 points max)
-    // Cloudflare = renewable energy commitment
-    // AWS/GCP regions vary, but generally moving to renewable
-    const cdnHeaders = responseHeaders.get('cf-ray') || 
-                       responseHeaders.get('x-amz-cf-id') || 
-                       responseHeaders.get('x-cache');
-    
+    // Green Hosting Detection (25 points max)
     if (responseHeaders.get('cf-ray')) {
-      // Cloudflare uses renewable energy
-      echoScore += 25;
+      echoScore += 25; // Cloudflare uses renewable energy
     } else if (cdnHeaders) {
-      // Other CDNs may use some renewable energy
-      echoScore += 15;
+      echoScore += 15; // Other CDNs
     }
     
-    // Bonus for cache headers (reduces repeat energy use)
-    if (responseHeaders.get('cache-control')) {
+    // Cache bonus
+    if (cacheControl) {
       echoScore += 5;
     }
     
-    // 3. Image Optimization (20 points max)
+    // Image Optimization (20 points max)
     if (analysis.hasAVIF) {
-      echoScore += 20; // AVIF = best compression
+      echoScore += 20;
     } else if (analysis.hasWebP) {
-      echoScore += 15; // WebP = modern compression
+      echoScore += 15;
     }
     
-    // Lazy loading reduces initial energy use
     if (analysis.hasLazyLoading) {
       echoScore += 10;
     }
     
-    // 4. Resource Efficiency (15 points max)
-    // Fewer resources = less energy to transfer and process
+    // Resource Efficiency (15 points max)
     const resourceEfficiency = smoothScore(analysis.resourceCount, [
       [0, 15],
-      [25, 15],    // Very lean
-      [50, 12],    // Lean
-      [100, 8],    // Moderate
-      [150, 3],    // Heavy
-      [200, 0]     // Bloated
+      [25, 15],
+      [50, 12],
+      [100, 8],
+      [150, 3],
+      [200, 0]
     ]);
     echoScore += resourceEfficiency;
     
-    result.echo = clamp(echoScore);
+    result.sustainability = clamp(echoScore);
     
-    // Calculate CO2 estimate (for informational purposes)
-    // Formula from Sustainable Web Design: 0.81 kWh per GB × carbon intensity
-    const carbonIntensity = responseHeaders.get('cf-ray') ? 50 : 442; // g CO2 per kWh
-    const co2PerView = (analysis.sizeMB * 0.81 * carbonIntensity) / 1000; // Convert to grams
+    // Calculate CO2 estimate
+    const carbonIntensity = responseHeaders.get('cf-ray') ? 50 : 442; // g CO2/kWh
+    const energyPerGB = 0.81; // kWh per GB
+    const co2PerView = (sizeMB / 1024) * energyPerGB * carbonIntensity;
     
-    // ============================================================================
-    // STEP 5: CALCULATE P-SCORE (CORRECTED WEIGHTS = 100%)
-    // ============================================================================
-    
-    // RESEARCH-BACKED WEIGHTS (sum to exactly 100%):
-    // Based on revenue impact research from Amazon, Walmart, Google, etc.
+    result.sustainability_details = {
+      score: result.sustainability,
+      co2PerView: Math.round(co2PerView * 1000) / 1000, // Round to 3 decimals
+      isGreenHosted: !!responseHeaders.get('cf-ray')
+    };
+
+    // ========================================================================
+    // CALCULATE P-SCORE (Research-Backed Weights)
+    // ========================================================================
     // Speed (30%): Strongest correlation (1% revenue per 100ms)
     // Mobile (18%): Critical for modern commerce
     // SEO (13%): Search users convert 2-6x more
     // Interactivity (10%): UX impact
-    // Accessibility (10%): Legal requirement, market expansion
+    // Accessibility (10%): Legal requirement
     // Privacy (6%): GDPR compliance
     // CDN (5%): Speed enabler
-    // Weight (4%): Mobile data costs
-    // Modern (2%): Future-proofing
-    // Code (1%): Technical foundation
+    // Page Weight (4%): Mobile data costs
+    // Modern Standards (2%): Future-proofing
+    // Code Quality (1%): Technical foundation
     // Sustainability (1%): ESG/brand value
     // Total: 30+18+13+10+10+6+5+4+2+1+1 = 100% ✅
     
     const pscore = 
-      result.karpov * 0.30 +
-      result.nexus * 0.18 +
-      result.pulse * 0.13 +
-      result.tyche * 0.10 +
-      result.vortex * 0.10 +
-      result.helix * 0.06 +
-      result.nova * 0.05 +
-      result.eden * 0.04 +
-      result.aether * 0.02 +
-      result.quantum * 0.01 +
-      result.echo * 0.01;
+      result.speed * 0.30 +
+      result.mobile * 0.18 +
+      result.seo * 0.13 +
+      result.interactivity * 0.10 +
+      result.accessibility * 0.10 +
+      result.privacy * 0.06 +
+      result.cdn * 0.05 +
+      result.pageWeight * 0.04 +
+      result.modernStandards * 0.02 +
+      result.codeQuality * 0.01 +
+      result.sustainability * 0.01;
     
-    // Final clamp and round (keep 1 decimal for granularity)
-    const finalPscore = Math.round(clamp(pscore) * 10) / 10;
+    result.pscore = Math.round(pscore * 10) / 10; // Round to 1 decimal
     
-    // ============================================================================
-    // M-SCORE CALCULATION (Revenue-Weighted)
-    // ============================================================================
-    // M-Score represents "% of revenue potential being realized"
-    // Based on proven revenue correlations from Amazon, Walmart, Google research
-    
-    // Revenue-impact weights (sum to 100%)
-    // These differ from P-Score because they emphasize revenue-critical factors
-    const mScore = 
-      result.karpov * 0.45 +    // Speed: Strongest revenue correlation (1% per 100ms)
-      result.nexus * 0.25 +     // Mobile: 50%+ of traffic, direct conversion impact
-      result.pulse * 0.15 +     // SEO: Search users convert 2-6x better
-      result.tyche * 0.05 +     // Interactivity: Moderate impact on bounce
-      result.vortex * 0.03 +    // Accessibility: Market expansion (ADA compliance)
-      result.helix * 0.02 +     // Privacy: Trust factor, indirect impact
-      result.nova * 0.02 +      // CDN: Enables speed (derivative factor)
-      result.eden * 0.01 +      // Weight: Correlates with speed
-      result.aether * 0.01 +    // Modern: Efficiency gains
-      result.quantum * 0.01;    // Code: Maintainability (indirect)
-      // Echo (Sustainability) has 0% weight in M-Score (no proven revenue correlation)
-    
-    // Apply conservative penalty factor
-    // Revenue loss compounds (slow site → high bounce → bad SEO → less traffic)
-    const finalMscore = Math.round(clamp(mScore * 0.95) * 10) / 10;
-    
-    // Calculate Moody's grade from M-Score
-    function getMoodyGrade(mscore) {
-      if (mscore >= 95) return { grade: 'AAA', description: 'Exceptional', risk: 'Minimal' };
-      if (mscore >= 90) return { grade: 'AA', description: 'Excellent', risk: 'Very Low' };
-      if (mscore >= 85) return { grade: 'A', description: 'Strong', risk: 'Low' };
-      if (mscore >= 80) return { grade: 'BBB', description: 'Good', risk: 'Moderate' };
-      if (mscore >= 75) return { grade: 'BB', description: 'Fair', risk: 'Notable' };
-      if (mscore >= 70) return { grade: 'B', description: 'Weak', risk: 'Significant' };
-      if (mscore >= 65) return { grade: 'CCC', description: 'Poor', risk: 'High' };
-      if (mscore >= 60) return { grade: 'CC', description: 'Very Poor', risk: 'Very High' };
-      return { grade: 'C', description: 'Critical', risk: 'Severe' };
-    }
-    
-    const moodyRating = getMoodyGrade(finalMscore);
-    const revenueRealization = Math.round(finalMscore);
-    const estimatedRevenueLoss = 100 - revenueRealization;
-    
-    // Generate sector-specific executive summary
-    const revenueSummary = getSectorSpecificSummary(finalMscore, estimatedRevenueLoss, detectedSector);
-    
-    // ============================================================================
-    // STEP 6: BUILD RESPONSE (with detailed data)
-    // ============================================================================
-    
-    const finalResult = {
-      pscore: finalPscore,
-      mscore: finalMscore,
-      moodyGrade: moodyRating.grade,
-      moodyDescription: moodyRating.description,
-      moodyRisk: moodyRating.risk,
-      revenueRealization: revenueRealization,
-      estimatedRevenueLoss: estimatedRevenueLoss,
-      revenueSummary: revenueSummary,
-      sector: detectedSector,
-      hostname,
-      url: finalUrl,
-      timestamp,
-      scanMethod,
-      data: {
-        karpov: { 
-          score: Math.round(result.karpov * 10) / 10,
-          ttfb,
-          ttfbScore: Math.round(ttfbScore * 10) / 10,
-          renderTime: renderingTime,
-          adjustedRenderTime,
-          renderScore: Math.round(renderScore * 10) / 10,
-          loadTime,
-          blockingScripts: analysis.blockingScripts,
-          blockingCSS: analysis.blockingCSS
-        },
-        tyche: { 
-          score: Math.round(result.tyche * 10) / 10,
-          thirdPartyScripts: analysis.thirdPartyCount,
-          blockingScripts: analysis.blockingScripts,
-          resourceCount: analysis.resourceCount
-        },
-        vortex: {
-          score: Math.round(result.vortex * 10) / 10,
-          hasAlt: analysis.hasAlt,
-          hasAriaLabels: analysis.hasAriaLabels,
-          hasLang: analysis.hasLang,
-          hasH1: analysis.hasH1
-        },
-        nexus: {
-          score: Math.round(result.nexus * 10) / 10,
-          hasViewport: analysis.hasViewport,
-          hasLazyLoading: analysis.hasLazyLoading,
-          mobileSpeed: loadTime
-        },
-        helix: {
-          score: Math.round(result.helix * 10) / 10,
-          hasHTTPS: analysis.hasHTTPS,
-          thirdPartyTrackers: analysis.thirdPartyCount,
-          hasAnalytics: analysis.hasGoogleAnalytics,
-          hasFacebookPixel: analysis.hasFacebookPixel
-        },
-        pulse: {
-          score: Math.round(result.pulse * 10) / 10,
-          hasTitle: analysis.hasTitle,
-          titleLength,
-          hasDescription: analysis.hasDescription,
-          hasStructuredData: analysis.hasStructuredData,
-          hasCanonical: analysis.hasCanonical,
-          ogTags: analysis.ogTags
-        },
-        nova: {
-          score: Math.round(result.nova * 10) / 10,
-          isCDN: !!isCDN,
-          hasCache: !!cacheControl,
-          compression
-        },
-        eden: {
-          score: Math.round(result.eden * 10) / 10,
-          sizeMB: Math.round(analysis.sizeMB * 100) / 100
-        },
-        aether: {
-          score: Math.round(result.aether * 10) / 10,
-          hasWebP: analysis.hasWebP,
-          hasAVIF: analysis.hasAVIF,
-          hasLazyLoading: analysis.hasLazyLoading
-        },
-        quantum: {
-          score: Math.round(result.quantum * 10) / 10,
-          blockingScripts: analysis.blockingScripts,
-          blockingCSS: analysis.blockingCSS,
-          resourceCount: analysis.resourceCount
-        },
-        echo: {
-          score: Math.round(result.echo * 10) / 10,
-          sizeMB: Math.round(analysis.sizeMB * 100) / 100,
-          co2PerView: Math.round(co2PerView * 1000) / 1000, // grams CO2
-          greenHosting: !!responseHeaders.get('cf-ray'),
-          hasImageOptimization: analysis.hasWebP || analysis.hasAVIF,
-          hasLazyLoading: analysis.hasLazyLoading,
-          resourceCount: analysis.resourceCount
-        }
+    // Convert to credit rating
+    if (result.pscore >= 95) result.rating = 'AAA';
+    else if (result.pscore >= 90) result.rating = 'AA';
+    else if (result.pscore >= 85) result.rating = 'A';
+    else if (result.pscore >= 80) result.rating = 'BBB';
+    else if (result.pscore >= 75) result.rating = 'BB';
+    else if (result.pscore >= 70) result.rating = 'B';
+    else if (result.pscore >= 65) result.rating = 'CCC';
+    else if (result.pscore >= 60) result.rating = 'CC';
+    else result.rating = 'C';
+
+    return new Response(JSON.stringify(result), {
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
       }
-    };
-    
-    // Cache in D1
-    if (context.env.DB) {
-      try {
-        await context.env.DB.prepare(`
-          INSERT OR REPLACE INTO precomputed_scores 
-          (hostname, score_data, scan_method, sector, last_updated)
-          VALUES (?, ?, ?, ?, datetime('now'))
-        `).bind(
-          hostname,
-          JSON.stringify(finalResult),
-          scanMethod,
-          sector || 'other'
-        ).run();
-      } catch (e) {
-        console.error('D1 cache failed:', e);
-      }
-    }
-    
-    return new Response(JSON.stringify(finalResult), {
-      status: 200,
-      headers: corsHeaders
     });
-    
+
   } catch (error) {
-    return new Response(JSON.stringify({
-      error: 'Scan failed',
-      details: error.message,
-      stack: error.stack
+    return new Response(JSON.stringify({ 
+      error: error.message 
     }), {
       status: 500,
-      headers: corsHeaders
+      headers: { 'Content-Type': 'application/json' }
     });
   }
 }
