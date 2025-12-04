@@ -1,8 +1,9 @@
 // ============================================================================
-// PYTHIA SCAN ENGINE - Research-Backed Weights + Sustainability
+// PYTHIA SCAN ENGINE - Research-Backed Weights + Plain Names
 // ============================================================================
+// All indices use plain descriptive names (speed, mobile, seo, etc.)
 // Weights based on revenue impact research from Amazon, Walmart, Google, etc.
-// Sustainability based on Sustainable Web Design + Green Web Foundation
+// Includes verification metadata to prove scans are real
 // ============================================================================
 
 export async function onRequestPost(context) {
@@ -12,7 +13,7 @@ export async function onRequestPost(context) {
     const { url } = await request.json();
     
     if (!url) {
-      return new Response(JSON.stringify({ error: 'URL is required' }), {
+      return new Response(JSON.stringify({ error: 'URL required' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
@@ -99,13 +100,13 @@ export async function onRequestPost(context) {
     const result = {};
 
     // ========================================================================
-    // CALCULATE 11 COMPONENT SCORES
+    // CALCULATE 11 COMPONENT SCORES (Plain Names)
     // ========================================================================
 
     // 1. SPEED - 30% weight
     // Physics-aware: Apply 200ms baseline for network latency
     const adjustedLoadTime = Math.max(0, loadTime - 200);
-    const karpovScore = smoothScore(adjustedLoadTime, [
+    const speedScore = smoothScore(adjustedLoadTime, [
       [0, 100],
       [300, 95],
       [500, 90],
@@ -117,34 +118,34 @@ export async function onRequestPost(context) {
       [5000, 20],
       [10000, 0]
     ]);
-    result.speed = clamp(karpovScore);
+    result.speed = clamp(speedScore);
 
     // 2. MOBILE - 18% weight
-    let nexusScore = 0;
-    if (analysis.hasViewport) nexusScore += 40;
+    let mobileScore = 0;
+    if (analysis.hasViewport) mobileScore += 40;
     
     // Responsive images
-    if (analysis.hasWebP || analysis.hasAVIF) nexusScore += 25;
-    if (analysis.hasLazyLoading) nexusScore += 15;
+    if (analysis.hasWebP || analysis.hasAVIF) mobileScore += 25;
+    if (analysis.hasLazyLoading) mobileScore += 15;
     
     // Mobile-friendly size
-    if (sizeMB < 2) nexusScore += 20;
-    else if (sizeMB < 5) nexusScore += 10;
+    if (sizeMB < 2) mobileScore += 20;
+    else if (sizeMB < 5) mobileScore += 10;
     
-    result.mobile = clamp(nexusScore);
+    result.mobile = clamp(mobileScore);
 
     // 3. SEO - 13% weight
-    let pulseScore = 0;
-    if (analysis.hasTitle) pulseScore += 25;
-    if (analysis.hasDescription) pulseScore += 25;
-    if (analysis.hasOG) pulseScore += 20;
-    if (analysis.hasStructuredData) pulseScore += 15;
-    if (analysis.hasHTTPS) pulseScore += 15;
+    let seoScore = 0;
+    if (analysis.hasTitle) seoScore += 25;
+    if (analysis.hasDescription) seoScore += 25;
+    if (analysis.hasOG) seoScore += 20;
+    if (analysis.hasStructuredData) seoScore += 15;
+    if (analysis.hasHTTPS) seoScore += 15;
     
-    result.seo = clamp(pulseScore);
+    result.seo = clamp(seoScore);
 
     // 4. INTERACTIVITY - 10% weight
-    const tycheScore = smoothScore(loadTime, [
+    const interactivityScore = smoothScore(loadTime, [
       [0, 100],
       [100, 95],
       [300, 90],
@@ -155,45 +156,45 @@ export async function onRequestPost(context) {
       [5000, 20],
       [10000, 0]
     ]);
-    result.interactivity = clamp(tycheScore);
+    result.interactivity = clamp(interactivityScore);
 
     // 5. ACCESSIBILITY - 10% weight
-    let vortexScore = 20; // Base for valid HTML
-    if (analysis.hasAltText) vortexScore += 40;
-    if (analysis.hasAriaLabels) vortexScore += 30;
-    if (analysis.hasViewport) vortexScore += 10;
+    let accessibilityScore = 20; // Base for valid HTML
+    if (analysis.hasAltText) accessibilityScore += 40;
+    if (analysis.hasAriaLabels) accessibilityScore += 30;
+    if (analysis.hasViewport) accessibilityScore += 10;
     
-    result.accessibility = clamp(vortexScore);
+    result.accessibility = clamp(accessibilityScore);
 
     // 6. PRIVACY - 6% weight
-    let helixScore = 0;
-    if (analysis.hasHTTPS) helixScore += 40;
-    if (analysis.hasCSP) helixScore += 20;
-    if (analysis.hasXFrameOptions) helixScore += 15;
-    if (analysis.hasHSTS) helixScore += 15;
-    if (analysis.hasPermissionsPolicy) helixScore += 10;
+    let privacyScore = 0;
+    if (analysis.hasHTTPS) privacyScore += 40;
+    if (analysis.hasCSP) privacyScore += 20;
+    if (analysis.hasXFrameOptions) privacyScore += 15;
+    if (analysis.hasHSTS) privacyScore += 15;
+    if (analysis.hasPermissionsPolicy) privacyScore += 10;
     
-    result.privacy = clamp(helixScore);
+    result.privacy = clamp(privacyScore);
 
     // 7. CDN - 5% weight
-    let novaScore = 0;
+    let cdnScore = 0;
     const cdnHeaders = responseHeaders.get('cf-ray') || 
                        responseHeaders.get('x-amz-cf-id') ||
                        responseHeaders.get('x-cache');
     
-    if (cdnHeaders) novaScore += 50;
+    if (cdnHeaders) cdnScore += 50;
     
     const cacheControl = responseHeaders.get('cache-control');
     if (cacheControl) {
-      if (cacheControl.includes('max-age')) novaScore += 30;
-      if (cacheControl.includes('public')) novaScore += 10;
-      if (cacheControl.includes('immutable')) novaScore += 10;
+      if (cacheControl.includes('max-age')) cdnScore += 30;
+      if (cacheControl.includes('public')) cdnScore += 10;
+      if (cacheControl.includes('immutable')) cdnScore += 10;
     }
     
-    result.cdn = clamp(novaScore);
+    result.cdn = clamp(cdnScore);
 
     // 8. PAGE WEIGHT - 4% weight
-    const edenScore = smoothScore(sizeMB, [
+    const pageWeightScore = smoothScore(sizeMB, [
       [0, 100],
       [0.5, 95],
       [1, 90],
@@ -204,42 +205,42 @@ export async function onRequestPost(context) {
       [20, 10],
       [50, 0]
     ]);
-    result.pageWeight = clamp(edenScore);
+    result.pageWeight = clamp(pageWeightScore);
 
     // 9. MODERN STANDARDS - 2% weight
-    let aetherScore = 0;
-    if (analysis.hasAVIF) aetherScore += 35;
-    else if (analysis.hasWebP) aetherScore += 30;
-    if (analysis.hasLazyLoading) aetherScore += 30;
-    if (analysis.hasViewport) aetherScore += 20;
-    if (analysis.hasStructuredData) aetherScore += 15;
+    let modernStandardsScore = 0;
+    if (analysis.hasAVIF) modernStandardsScore += 35;
+    else if (analysis.hasWebP) modernStandardsScore += 30;
+    if (analysis.hasLazyLoading) modernStandardsScore += 30;
+    if (analysis.hasViewport) modernStandardsScore += 20;
+    if (analysis.hasStructuredData) modernStandardsScore += 15;
     
-    result.modernStandards = clamp(aetherScore);
+    result.modernStandards = clamp(modernStandardsScore);
 
     // 10. CODE QUALITY - 1% weight
-    let quantumScore = 60; // Baseline
+    let codeQualityScore = 60; // Baseline
     
     if (analysis.blockingScripts === 0) {
-      quantumScore += 20;
+      codeQualityScore += 20;
     } else {
-      quantumScore -= Math.min(20, analysis.blockingScripts * 3);
+      codeQualityScore -= Math.min(20, analysis.blockingScripts * 3);
     }
     
     if (analysis.blockingCSS === 0) {
-      quantumScore += 20;
+      codeQualityScore += 20;
     } else {
-      quantumScore -= Math.min(15, analysis.blockingCSS * 2.5);
+      codeQualityScore -= Math.min(15, analysis.blockingCSS * 2.5);
     }
     
-    if (analysis.resourceCount < 50) quantumScore += 10;
+    if (analysis.resourceCount < 50) codeQualityScore += 10;
     else if (analysis.resourceCount > 150) {
-      quantumScore -= Math.min(10, (analysis.resourceCount - 150) * 0.1);
+      codeQualityScore -= Math.min(10, (analysis.resourceCount - 150) * 0.1);
     }
     
-    result.codeQuality = clamp(quantumScore);
+    result.codeQuality = clamp(codeQualityScore);
 
     // 11. SUSTAINABILITY - 1% weight
-    let echoScore = 0;
+    let sustainabilityScore = 0;
     
     // Page Weight Efficiency (40 points max)
     const weightScore = smoothScore(sizeMB, [
@@ -254,29 +255,29 @@ export async function onRequestPost(context) {
       [20, 2],
       [50, 0]
     ]);
-    echoScore += weightScore;
+    sustainabilityScore += weightScore;
     
     // Green Hosting Detection (25 points max)
     if (responseHeaders.get('cf-ray')) {
-      echoScore += 25; // Cloudflare uses renewable energy
+      sustainabilityScore += 25; // Cloudflare uses renewable energy
     } else if (cdnHeaders) {
-      echoScore += 15; // Other CDNs
+      sustainabilityScore += 15; // Other CDNs
     }
     
     // Cache bonus
     if (cacheControl) {
-      echoScore += 5;
+      sustainabilityScore += 5;
     }
     
     // Image Optimization (20 points max)
     if (analysis.hasAVIF) {
-      echoScore += 20;
+      sustainabilityScore += 20;
     } else if (analysis.hasWebP) {
-      echoScore += 15;
+      sustainabilityScore += 15;
     }
     
     if (analysis.hasLazyLoading) {
-      echoScore += 10;
+      sustainabilityScore += 10;
     }
     
     // Resource Efficiency (15 points max)
@@ -288,9 +289,9 @@ export async function onRequestPost(context) {
       [150, 3],
       [200, 0]
     ]);
-    echoScore += resourceEfficiency;
+    sustainabilityScore += resourceEfficiency;
     
-    result.sustainability = clamp(echoScore);
+    result.sustainability = clamp(sustainabilityScore);
     
     // Calculate CO2 estimate
     const carbonIntensity = responseHeaders.get('cf-ray') ? 50 : 442; // g CO2/kWh
