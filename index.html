@@ -236,35 +236,29 @@
             <p class="text-sm text-gray-600 mb-4">Performance gap to achieve 100% score</p>
             <button onclick="toggleExpand('techDetails')" class="w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700">Learn More</button>
             
+            <div class="mt-3 flex gap-2">
+              <button onclick="toggleExpand('techComparison')" class="flex-1 py-2 px-4 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm">Compare</button>
+              <button id="techPdfBtn" onclick="downloadTechReport()" class="hidden flex-1 py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700 text-sm">Download PDF</button>
+          </div>
+            
             <div id="techDetails" class="expandable mt-4 pt-4 border-t">
               <div class="text-sm space-y-3">
-                <div>
-                  <p class="font-semibold mb-2">Performance Breakdown:</p>
-                  <div id="indexBreakdown" class="space-y-2"></div>
-                </div>
-                
-                <div class="mt-4 pt-4 border-t">
-                  <button onclick="downloadTechReport()" class="w-full py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700 font-medium">
-                    Download Tech PDF
-                  </button>
-                </div>
-                
-                <div class="mt-4">
-                  <label class="block font-semibold mb-2">Compare with Competitors (add up to 5):</label>
-                  <div class="flex gap-2">
-                    <input type="text" id="techCompetitorUrl" placeholder="competitor.com" class="flex-1 px-3 py-2 border-2 border-gray-300 rounded focus:border-indigo-500 focus:outline-none text-sm" />
-                    <button onclick="scanTechCompetitor()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm">Scan</button>
-                  </div>
-                  <div id="techCompetitorResults" class="mt-3"></div>
-                  
-                  <div class="mt-4 flex gap-2">
-                    <button id="techComparisonPdfBtn" onclick="downloadTechComparisonReport()" class="hidden flex-1 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm inline-flex items-center justify-center gap-2">
-                      <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/></svg>
-                      Download Tech Comparison PDF
-                    </button>
-                  </div>
-                </div>
+                <p class="font-semibold mb-2">Performance Breakdown:</p>
+                <div id="indexBreakdown" class="space-y-2"></div>
               </div>
+            </div>
+            
+            <div id="techComparison" class="expandable mt-4 pt-4 border-t">
+              <label class="block font-semibold mb-2 text-sm">Compare Technical Performance:</label>
+              <div class="flex gap-2 mb-3">
+                <input type="text" id="techCompetitorUrl" placeholder="competitor.com" class="flex-1 px-3 py-2 border-2 border-gray-300 rounded focus:border-indigo-500 focus:outline-none text-sm" />
+                <button onclick="scanTechCompetitor()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm">Scan</button>
+              </div>
+              <div id="techCompetitorResults" class="mt-3"></div>
+              
+              <button id="techComparisonPdfBtn" onclick="downloadTechComparisonReport()" class="hidden w-full mt-4 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm">
+                Download Tech Comparison PDF
+              </button>
             </div>
           </div>
         </div>
@@ -485,13 +479,13 @@
         <h3 class="text-2xl font-bold text-gray-800 mb-4">Get in Touch</h3>
         <p class="text-gray-700 mb-4">Have questions? Want to discuss enterprise needs?</p>
         <p class="text-xl text-indigo-600 font-semibold">
-          <a href="/cdn-cgi/l/email-protection#d0b3a2bfbeb9a8b8bfbcb4b9beb7a390b7bdb1b9bcfeb3bfbd" class="hover:underline"><span class="__cf_email__" data-cfemail="5132233e3f3829393e3d35383f362211363c30383d7f323e3c">[email&#160;protected]</span></a>
+          <a href="mailto:cronixholdings@gmail.com" class="hover:underline">cronixholdings@gmail.com</a>
         </p>
       </div>
     </div>
   </section>
 
-  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  <script>
     // Particle animation with mouse following
     const canvas = document.getElementById('particleCanvas');
     const ctx = canvas.getContext('2d');
@@ -629,7 +623,7 @@
     return;
   }
   
-  // Calculate revenue impact
+  // Animate numbers
   const loadTime = currentScanData._meta?.loadTimeMs || 1000;
   const baselineTime = 500; // Amazon's baseline
   const delayMs = Math.max(0, loadTime - baselineTime);
@@ -640,7 +634,12 @@
   const lossPercent = delay100ms * 1;
   const annualLoss = amazonRevenue * (lossPercent / 100);
   
-  // Animate from 0 to calculated values
+  // Set initial values immediately
+  document.getElementById('annualLoss').textContent = '$' + Math.floor(annualLoss).toLocaleString('en-US');
+  document.getElementById('monthlyLoss').textContent = '$' + Math.floor(annualLoss / 12).toLocaleString('en-US');
+  document.getElementById('dailyLoss').textContent = '$' + Math.floor(annualLoss / 365).toLocaleString('en-US');
+  
+  // Then animate from 0
   animateValue('annualLoss', 0, annualLoss, 2000, '$');
   animateValue('monthlyLoss', 0, annualLoss / 12, 2000, '$');
   animateValue('dailyLoss', 0, annualLoss / 365, 2000, '$');
@@ -777,14 +776,7 @@
         });
         
         const data = await response.json();
-        
-        if (data.error) {
-          if (data.error === 'BLOCKED_SCAN') {
-            resultsDiv.innerHTML = '<p class="text-orange-600 text-sm">Site blocks automated scans. <a href="#" onclick="showManualScanModal(\'' + url + '\'); return false;" class="underline font-semibold">Request manual audit ($50)</a></p>';
-            return;
-          }
-          throw new Error(data.error);
-        }
+        if (data.error) throw new Error(data.error);
         
         comparisonScans.push({ ...data, url });
         displayComparisons();
@@ -854,14 +846,7 @@
         });
         
         const data = await response.json();
-        
-        if (data.error) {
-          if (data.error === 'BLOCKED_SCAN') {
-            resultsDiv.innerHTML = '<p class="text-orange-600 text-sm">Site blocks automated scans. <a href="#" onclick="showManualScanModal(\'' + url + '\'); return false;" class="underline font-semibold">Request manual audit ($50)</a></p>';
-            return;
-          }
-          throw new Error(data.error);
-        }
+        if (data.error) throw new Error(data.error);
         
         techComparisonScans.push({ ...data, url });
         displayTechComparisons();
@@ -899,20 +884,6 @@
       if (techComparisonScans.length === 0) {
         document.getElementById('techComparisonPdfBtn').classList.add('hidden');
       }
-    }
-    
-    function displayResults(data, url) {
-      document.getElementById('scannedUrl').textContent = url;
-      document.getElementById('pscoreValue').textContent = data.pscore;
-      document.getElementById('ratingValue').textContent = data.rating;
-      document.getElementById('ratingValue').className = 'credit-rating mb-4 ' + getRatingColor(data.rating);
-      
-      displayOpportunityLoss(data);
-      displayTechShortfall(data);
-      generateFixRecommendations(data);
-      
-      document.getElementById('results').classList.remove('hidden');
-      document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
     }
     
     function displayOpportunityLoss(data) {
@@ -1216,4 +1187,14 @@
     
     function getRatingColor(rating) {
       if (['AAA', 'AA', 'A'].includes(rating)) return 'text-green-600';
-      if (['BBB', 'BB',
+      if (['BBB', 'BB', 'B'].includes(rating)) return 'text-yellow-600';
+      return 'text-red-600';
+    }
+    
+    document.getElementById('urlInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') scanWebsite();
+    });
+  </script>
+
+</body>
+</html>
