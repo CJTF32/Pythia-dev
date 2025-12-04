@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pythia™ - Digital Health Agency</title>
+  <title>Pythia™ - The Digital Health Agency</title>
   
   <meta name="description" content="Professional website performance analysis. Get your Pythia Rating measuring speed, accessibility, SEO, privacy, and sustainability.">
   <meta name="keywords" content="website performance, web performance, Pythia Rating, performance testing, website rating, digital health">
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://js.stripe.com/v3/"></script>
   <style>
     html { scroll-behavior: smooth; }
     body { position: relative; overflow-x: hidden; }
@@ -63,7 +64,7 @@
     <div class="container mx-auto px-4 py-8 max-w-6xl">
       <div class="text-center mb-12">
         <h1 class="text-5xl font-bold text-indigo-600 mb-3">Pythia<sup class="text-2xl">™</sup></h1>
-        <p class="text-xl text-gray-600">Digital Health Agency</p>
+        <p class="text-xl text-gray-600">The Digital Health Agency</p>
         <p class="text-sm text-gray-500 mt-2">The Moody's of Websites</p>
       </div>
 
@@ -243,11 +244,7 @@
                   <div id="indexBreakdown" class="space-y-2"></div>
                 </div>
                 
-                <div class="mt-4 pt-4 border-t">
-                  <button onclick="downloadTechReport()" class="w-full py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700 font-medium">
-                    Download Tech PDF
-                  </button>
-                </div>
+
                 
                 <div class="mt-4">
                   <label class="block font-semibold mb-2">Compare with Competitors (add up to 5):</label>
@@ -606,9 +603,51 @@
       }
     }
     
-    function processPayment() {
-      alert('Stripe integration pending');
-      document.getElementById('manualScanForm').submit();
+    async function processPayment() {
+      const email = document.querySelector('#manualScanForm input[name="email"]').value;
+      const url = document.getElementById('blockedUrl').value;
+      const notes = document.querySelector('#manualScanForm textarea[name="notes"]').value;
+      
+      if (!email) {
+        alert('Please enter your email address');
+        return;
+      }
+      
+      try {
+        // Initialize Stripe (replace with your publishable key)
+        const stripe = Stripe('pk_test_51Sabu30fJl0m0hGOud5JHa3b8YBQU2WpynwBM8qMu7isqRGGyE1lM18KtOD72w8moaCu34THFicVY8kketYhAjJj00gQwewrwE');
+        
+        // Call your Cloudflare Worker to create a checkout session
+        const response = await fetch('https://p-score.me/api/create-checkout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email,
+            url: url,
+            notes: notes
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to create checkout session');
+        }
+        
+        const { sessionId } = await response.json();
+        
+        // Redirect to Stripe Checkout
+        const result = await stripe.redirectToCheckout({
+          sessionId: sessionId
+        });
+        
+        if (result.error) {
+          alert(result.error.message);
+        }
+      } catch (error) {
+        console.error('Payment error:', error);
+        alert('Payment processing failed. Please try again or contact support.');
+      }
     }
     
     function showAmazonCalculator() {
@@ -1142,47 +1181,100 @@
       doc.text('Pythia™ Competitive Comparison', 20, 20);
       
       doc.setFontSize(10);
-      doc.text(`Your Site: ${currentScanData.url}`, 20, 35);
-      doc.text(`P-Score: ${currentScanData.pscore}/100 (${currentScanData.rating})`, 20, 42);
+      let y = 35;
       
-      let y = 55;
-      comparisonScans.forEach((comp, i) => {
-        const diff = currentScanData.pscore - comp.pscore;
-        doc.text(`${i+1}. ${comp.url}`, 20, y);
-        doc.text(`P-Score: ${comp.pscore}/100 | Diff: ${diff > 0 ? '+' : ''}${diff.toFixed(1)}`, 30, y+6);
-        y += 15;
-      });
-      
-      doc.save('pythia-comparison.pdf');
-    }
-    
-    function downloadTechReport() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const data = currentScanData;
-      
-      doc.setFontSize(18);
-      doc.text('Pythia™ Technical Report', 20, 20);
+      // Your Site Section
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('Your Site:', 20, y);
+      doc.setFont(undefined, 'normal');
       doc.setFontSize(10);
-      doc.text(`URL: ${data.url}`, 20, 30);
-      doc.text(`P-Score: ${data.pscore}/100`, 20, 36);
+      y += 6;
+      doc.text(`URL: ${currentScanData.url}`, 20, y);
+      y += 6;
+      doc.text(`P-Score: ${currentScanData.pscore}/100 | Rating: ${currentScanData.rating}`, 20, y);
+      y += 8;
       
-      // Add all tech details
-      let y = 50;
-      const indices = [
-        ['Speed', data.speed], ['Mobile', data.mobile], ['SEO', data.seo],
-        ['Interactivity', data.interactivity], ['Accessibility', data.accessibility],
-        ['Privacy', data.privacy], ['CDN', data.cdn], ['Page Weight', data.pageWeight],
-        ['Modern Standards', data.modernStandards], ['Code Quality', data.codeQuality],
-        ['Sustainability', data.sustainability]
+      // All 11 Indices for Your Site
+      const yourIndices = [
+        ['Speed', currentScanData.speed],
+        ['Mobile', currentScanData.mobile],
+        ['SEO', currentScanData.seo],
+        ['Interactivity', currentScanData.interactivity],
+        ['Accessibility', currentScanData.accessibility],
+        ['Privacy', currentScanData.privacy],
+        ['CDN', currentScanData.cdn],
+        ['Page Weight', currentScanData.pageWeight],
+        ['Modern Standards', currentScanData.modernStandards],
+        ['Code Quality', currentScanData.codeQuality],
+        ['Sustainability', currentScanData.sustainability]
       ];
       
-      indices.forEach(([name, score]) => {
-        doc.text(`${name}: ${score.toFixed(1)}/100`, 20, y);
-        y += 6;
+      yourIndices.forEach(([name, score]) => {
+        doc.text(`  ${name}: ${score.toFixed(1)}/100`, 25, y);
+        y += 5;
       });
       
-      doc.save('pythia-tech-report.pdf');
+      y += 5;
+      
+      // Competitor Sites Section
+      comparisonScans.forEach((comp, i) => {
+        // Add new page if needed
+        if (y > 250) {
+          doc.addPage();
+          y = 20;
+        }
+        
+        const diff = currentScanData.pscore - comp.pscore;
+        const diffText = diff > 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1);
+        
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text(`Competitor ${i+1}:`, 20, y);
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(10);
+        y += 6;
+        doc.text(`URL: ${comp.url}`, 20, y);
+        y += 6;
+        doc.text(`P-Score: ${comp.pscore}/100 | Rating: ${comp.rating} | Diff: ${diffText}`, 20, y);
+        y += 8;
+        
+        // All 11 Indices for Competitor
+        const compIndices = [
+          ['Speed', comp.speed],
+          ['Mobile', comp.mobile],
+          ['SEO', comp.seo],
+          ['Interactivity', comp.interactivity],
+          ['Accessibility', comp.accessibility],
+          ['Privacy', comp.privacy],
+          ['CDN', comp.cdn],
+          ['Page Weight', comp.pageWeight],
+          ['Modern Standards', comp.modernStandards],
+          ['Code Quality', comp.codeQuality],
+          ['Sustainability', comp.sustainability]
+        ];
+        
+        compIndices.forEach(([name, score]) => {
+          const yourScore = currentScanData[name.toLowerCase().replace(' ', '')];
+          const scoreDiff = yourScore - score;
+          const diffSymbol = scoreDiff > 0 ? '+' : '';
+          doc.text(`  ${name}: ${score.toFixed(1)}/100 (${diffSymbol}${scoreDiff.toFixed(1)})`, 25, y);
+          y += 5;
+        });
+        
+        y += 5;
+      });
+      
+      // Footer on all pages
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(`Generated by Pythia™ - cronixholdings.com | Page ${i} of ${pageCount}`, 20, 285);
+      }
+      
+      doc.save('pythia-comparison.pdf');
     }
     
     function downloadTechComparisonReport() {
