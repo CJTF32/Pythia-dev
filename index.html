@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pythia™ - The Digital Health Agency</title>
+  <title>Pythia™ - Digital Health Agency</title>
   
   <meta name="description" content="Professional website performance analysis. Get your Pythia Rating measuring speed, accessibility, SEO, privacy, and sustainability.">
   <meta name="keywords" content="website performance, web performance, Pythia Rating, performance testing, website rating, digital health">
@@ -64,7 +64,7 @@
     <div class="container mx-auto px-4 py-8 max-w-6xl">
       <div class="text-center mb-12">
         <h1 class="text-5xl font-bold text-indigo-600 mb-3">Pythia<sup class="text-2xl">™</sup></h1>
-        <p class="text-xl text-gray-600">The Digital Health Agency</p>
+        <p class="text-xl text-gray-600">Digital Health Agency</p>
         <p class="text-sm text-gray-500 mt-2">The Moody's of Websites</p>
       </div>
 
@@ -83,7 +83,7 @@
       <div id="manualScanModal" class="modal" onclick="closeManualScan(event)">
         <div class="card rounded-lg shadow-xl p-8 max-w-md mx-4" onclick="event.stopPropagation()">
           <h2 class="text-2xl font-bold text-gray-800 mb-4">Manual Scan Required</h2>
-          <p class="text-gray-600 mb-6">This site blocks automated scans. Request a manual professional audit for $275.</p>
+          <p class="text-gray-600 mb-6">This site blocks automated scans. Request a manual professional audit for $50.</p>
           
           <form id="manualScanForm" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
             <input type="hidden" name="scan_type" value="manual">
@@ -106,7 +106,7 @@
             
             <div class="flex gap-3">
               <button type="button" onclick="closeManualScan()" class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium">Cancel</button>
-              <button type="button" onclick="processPayment()" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Pay $275 & Request</button>
+              <button type="button" onclick="processPayment()" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Pay $50 & Request</button>
             </div>
           </form>
         </div>
@@ -473,7 +473,7 @@
 
       <div class="card rounded-lg shadow-md p-8 mb-8 bg-purple-50">
         <h3 class="text-2xl font-bold text-purple-800 mb-4">Manual Audit Service</h3>
-        <p class="text-gray-700 mb-4">Sites that block scans (Meta, Twitter/X): $275 per manual audit, 24-hour turnaround, expert recommendations.</p>
+        <p class="text-gray-700 mb-4">Sites that block scans (Meta, Twitter/X): $50 per manual audit, 24-hour turnaround, expert recommendations.</p>
         <button onclick="scrollToSection('home')" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Request Manual Scan</button>
       </div>
       
@@ -584,11 +584,6 @@
     function toggleExpand(id) {
       const element = document.getElementById(id);
       element.classList.toggle('expanded');
-  
-    // Show tech PDF button when techDetails is expanded
-      if (id === 'techDetails' && element.classList.contains('expanded')) {
-      document.getElementById('techPdfBtn').classList.remove('hidden');
-      }
     }
     
     function showManualScanModal(url) {
@@ -615,7 +610,7 @@
       
       try {
         // Initialize Stripe (replace with your publishable key)
-        const stripe = Stripe('pk_test_51Sabu30fJl0m0hGOud5JHa3b8YBQU2WpynwBM8qMu7isqRGGyE1lM18KtOD72w8moaCu34THFicVY8kketYhAjJj00gQwewrwE');
+        const stripe = Stripe('pk_test_YOUR_PUBLISHABLE_KEY_HERE');
         
         // Call your Cloudflare Worker to create a checkout session
         const response = await fetch('https://p-score.me/api/create-checkout', {
@@ -819,7 +814,7 @@
         
         if (data.error) {
           if (data.error === 'BLOCKED_SCAN') {
-            resultsDiv.innerHTML = '<p class="text-orange-600 text-sm">Site blocks automated scans. <a href="#" onclick="showManualScanModal(\'' + url + '\'); return false;" class="underline font-semibold">Request manual audit ($275)</a></p>';
+            resultsDiv.innerHTML = '<p class="text-orange-600 text-sm">Site blocks automated scans. <a href="#" onclick="showManualScanModal(\'' + url + '\'); return false;" class="underline font-semibold">Request manual audit ($50)</a></p>';
             return;
           }
           throw new Error(data.error);
@@ -896,7 +891,7 @@
         
         if (data.error) {
           if (data.error === 'BLOCKED_SCAN') {
-            resultsDiv.innerHTML = '<p class="text-orange-600 text-sm">Site blocks automated scans. <a href="#" onclick="showManualScanModal(\'' + url + '\'); return false;" class="underline font-semibold">Request manual audit ($275)</a></p>';
+            resultsDiv.innerHTML = '<p class="text-orange-600 text-sm">Site blocks automated scans. <a href="#" onclick="showManualScanModal(\'' + url + '\'); return false;" class="underline font-semibold">Request manual audit ($50)</a></p>';
             return;
           }
           throw new Error(data.error);
@@ -1317,17 +1312,14 @@ document.addEventListener('keydown', (event) => {
             // Main Scan Input
             event.preventDefault(); 
             scanWebsite();
-        } else if (targetId === 'comparisonUrlInput') {
-            // Comparison Modal Input (Assuming this is the correct ID)
+        } else if (targetId === 'competitorUrl') {
+            // Opportunity Loss competitor input
             event.preventDefault(); 
-            scanComparisonWebsite(); 
-        } 
-        
-        // FALLBACK: Check if the focused element is an <input> inside the comparison modal
-        // This is a defensive check in case the element ID is missing or different.
-        else if (targetElement.tagName === 'INPUT' && targetElement.placeholder.includes('competitor')) {
-            event.preventDefault();
-            scanComparisonWebsite();
+            scanCompetitor(); 
+        } else if (targetId === 'techCompetitorUrl') {
+            // Tech Shortfall competitor input
+            event.preventDefault(); 
+            scanTechCompetitor();
         }
     }
 });
