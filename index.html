@@ -1204,40 +1204,46 @@
       doc.save('pythia-tech-comparison.pdf');
     }
     
-   function showComingSoon() {
+  function showComingSoon() {
   alert('📄 White Paper Coming Soon!');
 }
 
-    document.addEventListener('DOMContentLoaded', () => {
-    const urlInput = document.getElementById('urlInput');
+// START OF THE CORRECTED SINGLE DOMContentLoaded BLOCK
+document.addEventListener('DOMContentLoaded', () => {
+  // 1. Listener for the Main Scan Input
+  const urlInput = document.getElementById('urlInput');
 
-    // Check if the element exists before adding the listener
-    if (urlInput) {
-        urlInput.addEventListener('keydown', (event) => {
-            // Check for the Enter key
-            if (event.key === 'Enter') {
-                // Prevent form submission if the input is in a <form>
-                event.preventDefault(); 
-                
-                // Call the scan function
-                scanWebsite();
-            }
-        });
-    }
+  if (urlInput) {
+    urlInput.addEventListener('keydown', (event) => {
+      // Check for the Enter key
+      if (event.key === 'Enter') {
+        // Prevent form submission if the input is in a <form>
+        event.preventDefault(); 
+        scanWebsite();
+      }
+    });
+  }
+
+  // 2. Listener for the Comparison Scan Modal Input (Correctly inside the block)
+  const comparisonUrlInput = document.getElementById('comparisonUrlInput'); 
+
+  if (comparisonUrlInput) {
+    comparisonUrlInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault(); 
+        // Call the correct function for the comparison scan
+        scanComparisonWebsite(); 
+      }
+    });
+  }
 });
+// END OF THE CORRECTED SINGLE DOMContentLoaded BLOCK
 
-    const comparisonUrlInput = document.getElementById('comparisonUrlInput'); 
-
-    if (comparisonUrlInput) {
-        comparisonUrlInput.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                event.preventDefault(); 
-                // Call the correct function for the comparison scan
-                scanComparisonWebsite(); 
-            }
-        });
-    }
-});
+function getScoreColor(score) {
+  if (score >= 80) return 'text-green-600';
+  if (score >= 60) return 'text-yellow-600';
+  return 'text-red-600';
+}
     
     function getScoreColor(score) {
       if (score >= 80) return 'text-green-600';
