@@ -1208,22 +1208,34 @@
   alert('📄 White Paper Coming Soon!');
 }
 
-// Attach a single keydown listener to the entire document
-// This avoids timing issues with modals loading after the page finishes.
 document.addEventListener('keydown', (event) => {
-    // 1. Check if the key pressed is Enter
+    // Check if the key pressed is Enter
     if (event.key === 'Enter') {
-        // 2. Identify the input element that is currently focused
-        const targetId = event.target.id;
-
+        
+        const targetElement = event.target;
+        const targetId = targetElement.id;
+        
+        // ⭐ DEBUGGING STEP: Log the ID of the element that has focus. ⭐
+        // Open your browser's Developer Console (F12) and press Enter.
+        // The correct ID will appear here.
+        console.log("Enter pressed on element ID:", targetId);
+        
+        // Check for the known input IDs
         if (targetId === 'urlInput') {
-            // Found main scan input
+            // Main Scan Input
             event.preventDefault(); 
             scanWebsite();
         } else if (targetId === 'comparisonUrlInput') {
-            // Found comparison modal input
+            // Comparison Modal Input (Assuming this is the correct ID)
             event.preventDefault(); 
             scanComparisonWebsite(); 
+        } 
+        
+        // FALLBACK: Check if the focused element is an <input> inside the comparison modal
+        // This is a defensive check in case the element ID is missing or different.
+        else if (targetElement.tagName === 'INPUT' && targetElement.placeholder.includes('competitor')) {
+            event.preventDefault();
+            scanComparisonWebsite();
         }
     }
 });
