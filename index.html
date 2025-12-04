@@ -83,7 +83,7 @@
       <div id="manualScanModal" class="modal" onclick="closeManualScan(event)">
         <div class="card rounded-lg shadow-xl p-8 max-w-md mx-4" onclick="event.stopPropagation()">
           <h2 class="text-2xl font-bold text-gray-800 mb-4">Manual Scan Required</h2>
-          <p class="text-gray-600 mb-6">This site blocks automated scans. Request a manual professional audit for $50.</p>
+          <p class="text-gray-600 mb-6">This site blocks automated scans. Request a manual professional audit for $275.</p>
           
           <form id="manualScanForm" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
             <input type="hidden" name="scan_type" value="manual">
@@ -106,7 +106,7 @@
             
             <div class="flex gap-3">
               <button type="button" onclick="closeManualScan()" class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium">Cancel</button>
-              <button type="button" onclick="processPayment()" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Pay $50 & Request</button>
+              <button type="button" onclick="processPayment()" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Pay $275 & Request</button>
             </div>
           </form>
         </div>
@@ -473,7 +473,7 @@
 
       <div class="card rounded-lg shadow-md p-8 mb-8 bg-purple-50">
         <h3 class="text-2xl font-bold text-purple-800 mb-4">Manual Audit Service</h3>
-        <p class="text-gray-700 mb-4">Sites that block scans (Meta, Twitter/X): $50 per manual audit, 24-hour turnaround, expert recommendations.</p>
+        <p class="text-gray-700 mb-4">Sites that block scans (Meta, Twitter/X): $275 per manual audit, 24-hour turnaround, expert recommendations.</p>
         <button onclick="scrollToSection('home')" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Request Manual Scan</button>
       </div>
       
@@ -814,7 +814,7 @@
         
         if (data.error) {
           if (data.error === 'BLOCKED_SCAN') {
-            resultsDiv.innerHTML = '<p class="text-orange-600 text-sm">Site blocks automated scans. <a href="#" onclick="showManualScanModal(\'' + url + '\'); return false;" class="underline font-semibold">Request manual audit ($50)</a></p>';
+            resultsDiv.innerHTML = '<p class="text-orange-600 text-sm">Site blocks automated scans. <a href="#" onclick="showManualScanModal(\'' + url + '\'); return false;" class="underline font-semibold">Request manual audit ($275)</a></p>';
             return;
           }
           throw new Error(data.error);
@@ -891,7 +891,7 @@
         
         if (data.error) {
           if (data.error === 'BLOCKED_SCAN') {
-            resultsDiv.innerHTML = '<p class="text-orange-600 text-sm">Site blocks automated scans. <a href="#" onclick="showManualScanModal(\'' + url + '\'); return false;" class="underline font-semibold">Request manual audit ($50)</a></p>';
+            resultsDiv.innerHTML = '<p class="text-orange-600 text-sm">Site blocks automated scans. <a href="#" onclick="showManualScanModal(\'' + url + '\'); return false;" class="underline font-semibold">Request manual audit ($275)</a></p>';
             return;
           }
           throw new Error(data.error);
