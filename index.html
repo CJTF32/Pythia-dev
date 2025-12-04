@@ -117,19 +117,21 @@
           <h2 class="text-2xl font-bold text-gray-800 mb-4">Revenue Impact Calculator</h2>
           
           <div id="amazonResults" class="mb-6">
-            <p class="text-gray-700 mb-4">Based on your load time, if this were Amazon...</p>
-            <div class="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-lg mb-4">
-              <p class="text-sm text-gray-600 mb-2">Annual Revenue Loss</p>
-              <div id="annualLoss" class="text-4xl font-bold text-red-600 mb-4 count-up">$0</div>
-              
-              <div class="grid grid-cols-2 gap-4 text-center">
-                <div>
-                  <p class="text-xs text-gray-600">Per Month</p>
-                  <p id="monthlyLoss" class="text-xl font-bold text-orange-600 count-up">$0</p>
-                </div>
-                <div>
-                  <p class="text-xs text-gray-600">Per Day</p>
-                  <p id="dailyLoss" class="text-xl font-bold text-orange-600 count-up">$0</p>
+            <div id="amazonCalculatorContent">
+              <p class="text-gray-700 mb-4">Based on your load time, if this were Amazon...</p>
+              <div class="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-lg mb-4">
+                <p class="text-sm text-gray-600 mb-2">Annual Revenue Loss</p>
+                <div id="annualLoss" class="text-4xl font-bold text-red-600 mb-4 count-up">$0</div>
+                
+                <div class="grid grid-cols-2 gap-4 text-center">
+                  <div>
+                    <p class="text-xs text-gray-600">Per Month</p>
+                    <p id="monthlyLoss" class="text-xl font-bold text-orange-600 count-up">$0</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-600">Per Day</p>
+                    <p id="dailyLoss" class="text-xl font-bold text-orange-600 count-up">$0</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -236,20 +238,25 @@
             <p class="text-sm text-gray-600 mb-4">Performance gap to achieve 100% score</p>
             <button onclick="toggleExpand('techDetails')" class="w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700">Learn More</button>
             
-            <div class="mt-3 flex gap-2">
-              <button onclick="toggleExpand('techComparison')" class="flex-1 py-2 px-4 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm">Compare</button>
-              <button id="techPdfBtn" onclick="downloadTechReport()" class="hidden flex-1 py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700 text-sm">Download PDF</button>
-          </div>
-            
             <div id="techDetails" class="expandable mt-4 pt-4 border-t">
               <div class="text-sm space-y-3">
                 <p class="font-semibold mb-2">Performance Breakdown:</p>
                 <div id="indexBreakdown" class="space-y-2"></div>
+                
+                <div class="mt-4 pt-4 border-t">
+                  <button id="techPdfBtn" onclick="downloadTechReport()" class="w-full py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700 font-medium mb-3">
+                    Download Tech PDF
+                  </button>
+                  
+                  <button onclick="toggleExpand('techComparison')" class="w-full py-2 px-4 bg-purple-600 text-white rounded hover:bg-purple-700 font-medium">
+                    Compare Technical Performance
+                  </button>
+                </div>
               </div>
             </div>
             
             <div id="techComparison" class="expandable mt-4 pt-4 border-t">
-              <label class="block font-semibold mb-2 text-sm">Compare Technical Performance:</label>
+              <label class="block font-semibold mb-2 text-sm">Compare with Competitors (add up to 5):</label>
               <div class="flex gap-2 mb-3">
                 <input type="text" id="techCompetitorUrl" placeholder="competitor.com" class="flex-1 px-3 py-2 border-2 border-gray-300 rounded focus:border-indigo-500 focus:outline-none text-sm" />
                 <button onclick="scanTechCompetitor()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm">Scan</button>
@@ -479,13 +486,13 @@
         <h3 class="text-2xl font-bold text-gray-800 mb-4">Get in Touch</h3>
         <p class="text-gray-700 mb-4">Have questions? Want to discuss enterprise needs?</p>
         <p class="text-xl text-indigo-600 font-semibold">
-          <a href="mailto:cronixholdings@gmail.com" class="hover:underline">cronixholdings@gmail.com</a>
+          <a href="/cdn-cgi/l/email-protection#5231203d3c3b2a3a3d3e363b3c352112353f333b3e7c313d3f" class="hover:underline"><span class="__cf_email__" data-cfemail="781b0a171611001017141c11161f0b381f15191114561b1715">[email&#160;protected]</span></a>
         </p>
       </div>
     </div>
   </section>
 
-  <script>
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
     // Particle animation with mouse following
     const canvas = document.getElementById('particleCanvas');
     const ctx = canvas.getContext('2d');
@@ -581,11 +588,6 @@
     function toggleExpand(id) {
       const element = document.getElementById(id);
       element.classList.toggle('expanded');
-  
-    // Show tech PDF button when techDetails is expanded
-      if (id === 'techDetails' && element.classList.contains('expanded')) {
-      document.getElementById('techPdfBtn').classList.remove('hidden');
-      }
     }
     
     function showManualScanModal(url) {
@@ -609,10 +611,34 @@
   const modal = document.getElementById('amazonModal');
   modal.classList.add('show');
   
+  // Reset calculator content first
+  document.getElementById('amazonCalculatorContent').innerHTML = `
+    <p class="text-gray-700 mb-4">Based on your load time, if this were Amazon...</p>
+    <div class="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-lg mb-4">
+      <p class="text-sm text-gray-600 mb-2">Annual Revenue Loss</p>
+      <div id="annualLoss" class="text-4xl font-bold text-red-600 mb-4 count-up">$0</div>
+      
+      <div class="grid grid-cols-2 gap-4 text-center">
+        <div>
+          <p class="text-xs text-gray-600">Per Month</p>
+          <p id="monthlyLoss" class="text-xl font-bold text-orange-600 count-up">$0</p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-600">Per Day</p>
+          <p id="dailyLoss" class="text-xl font-bold text-orange-600 count-up">$0</p>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Hide custom calculator
+  document.getElementById('customCalculator').classList.add('hidden');
+  document.getElementById('customResults').classList.add('hidden');
+  
   // Check if this IS Amazon
   const url = currentScanData.url.toLowerCase();
   if (url.includes('amazon.com') || url.includes('amazon.co.uk') || url.includes('amazon.')) {
-    document.getElementById('amazonResults').innerHTML = `
+    document.getElementById('amazonCalculatorContent').innerHTML = `
       <div class="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-lg mb-4 text-center">
         <p class="text-6xl mb-4">🤔</p>
         <p class="text-2xl font-bold text-orange-600 mb-2">Hold on...</p>
@@ -623,7 +649,7 @@
     return;
   }
   
-  // Animate numbers
+  // Calculate Amazon revenue impact
   const loadTime = currentScanData._meta?.loadTimeMs || 1000;
   const baselineTime = 500; // Amazon's baseline
   const delayMs = Math.max(0, loadTime - baselineTime);
@@ -634,12 +660,7 @@
   const lossPercent = delay100ms * 1;
   const annualLoss = amazonRevenue * (lossPercent / 100);
   
-  // Set initial values immediately
-  document.getElementById('annualLoss').textContent = '$' + Math.floor(annualLoss).toLocaleString('en-US');
-  document.getElementById('monthlyLoss').textContent = '$' + Math.floor(annualLoss / 12).toLocaleString('en-US');
-  document.getElementById('dailyLoss').textContent = '$' + Math.floor(annualLoss / 365).toLocaleString('en-US');
-  
-  // Then animate from 0
+  // Animate from 0 to calculated value
   animateValue('annualLoss', 0, annualLoss, 2000, '$');
   animateValue('monthlyLoss', 0, annualLoss / 12, 2000, '$');
   animateValue('dailyLoss', 0, annualLoss / 365, 2000, '$');
@@ -776,7 +797,14 @@
         });
         
         const data = await response.json();
-        if (data.error) throw new Error(data.error);
+        
+        if (data.error) {
+          if (data.error === 'BLOCKED_SCAN') {
+            resultsDiv.innerHTML = '<p class="text-orange-600 text-sm">Site blocks automated scans. <a href="#" onclick="showManualScanModal(\'' + url + '\'); return false;" class="underline font-semibold">Request manual audit ($50)</a></p>';
+            return;
+          }
+          throw new Error(data.error);
+        }
         
         comparisonScans.push({ ...data, url });
         displayComparisons();
@@ -846,7 +874,14 @@
         });
         
         const data = await response.json();
-        if (data.error) throw new Error(data.error);
+        
+        if (data.error) {
+          if (data.error === 'BLOCKED_SCAN') {
+            resultsDiv.innerHTML = '<p class="text-orange-600 text-sm">Site blocks automated scans. <a href="#" onclick="showManualScanModal(\'' + url + '\'); return false;" class="underline font-semibold">Request manual audit ($50)</a></p>';
+            return;
+          }
+          throw new Error(data.error);
+        }
         
         techComparisonScans.push({ ...data, url });
         displayTechComparisons();
@@ -885,20 +920,6 @@
         document.getElementById('techComparisonPdfBtn').classList.add('hidden');
       }
     }
-
-    function displayResults(data, url) {
-  document.getElementById('scannedUrl').textContent = url;
-  document.getElementById('pscoreValue').textContent = data.pscore;
-  document.getElementById('ratingValue').textContent = data.rating;
-  document.getElementById('ratingValue').className = 'credit-rating mb-4 ' + getRatingColor(data.rating);
-  
-  displayOpportunityLoss(data);
-  displayTechShortfall(data);
-  generateFixRecommendations(data);
-  
-  document.getElementById('results').classList.remove('hidden');
-  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
-}
     
     function displayOpportunityLoss(data) {
       const speedGap = 100 - (data.speed || 0);
@@ -1201,14 +1222,4 @@
     
     function getRatingColor(rating) {
       if (['AAA', 'AA', 'A'].includes(rating)) return 'text-green-600';
-      if (['BBB', 'BB', 'B'].includes(rating)) return 'text-yellow-600';
-      return 'text-red-600';
-    }
-    
-    document.getElementById('urlInput').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') scanWebsite();
-    });
-  </script>
-
-</body>
-</html>
+      if (['BBB', 'BB',
