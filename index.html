@@ -611,76 +611,23 @@
       document.getElementById('manualScanForm').submit();
     }
     
-   function showAmazonCalculator(force = false) {
-      const modal = document.getElementById('amazonModal');
-      modal.classList.add('show');
-      
-      const resultsDiv = document.getElementById('amazonResults');
-      
-      // We save the original HTML template here so we can restore it 
-      // if the user clicks "See it anyway"
-      const calculatorTemplate = `
-        <p class="text-gray-700 mb-4">Based on your load time, if this were Amazon...</p>
-        <div class="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-lg mb-4">
-          <p class="text-sm text-gray-600 mb-2">Annual Revenue Loss</p>
-          <div id="annualLoss" class="text-4xl font-bold text-red-600 mb-4 count-up">$0</div>
-          
-          <div class="grid grid-cols-2 gap-4 text-center">
-            <div>
-              <p class="text-xs text-gray-600">Per Month</p>
-              <p id="monthlyLoss" class="text-xl font-bold text-orange-600 count-up">$0</p>
-            </div>
-            <div>
-              <p class="text-xs text-gray-600">Per Day</p>
-              <p id="dailyLoss" class="text-xl font-bold text-orange-600 count-up">$0</p>
-            </div>
-          </div>
-        </div>
-      `;
-      
-      // Check if this IS Amazon
-      const url = (currentScanData.url || "").toLowerCase();
-      const isAmazon = url.includes('amazon.com') || url.includes('amazon.co.uk') || url.includes('amazon.');
-      
-      // If it is Amazon AND we haven't forced it yet, show the message
-      if (isAmazon && !force) {
-        resultsDiv.innerHTML = `
-          <div class="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-lg mb-4 text-center">
-            <p class="text-6xl mb-4">🤔</p>
-            <p class="text-2xl font-bold text-orange-600 mb-2">Hold on...</p>
-            <p class="text-lg text-gray-700">This IS Amazon! They should see this!</p>
-            <p class="text-sm text-gray-600 mt-4 italic">(Maybe send them their P-Score? 😉)</p>
-            
-            <button onclick="showAmazonCalculator(true)" class="mt-4 px-5 py-2 bg-white border-2 border-orange-200 text-orange-700 rounded-lg hover:bg-orange-50 font-medium transition-colors shadow-sm">
-              See it anyway
-            </button>
-          </div>
-        `;
-        return;
-      }
-      
-      // If we are forcing it (or it's not Amazon), ensure the calculator view is present
-      // We check if 'annualLoss' exists; if not (because the message is there), we restore the template
-      if (!document.getElementById('annualLoss')) {
-        resultsDiv.innerHTML = calculatorTemplate;
-      }
-      
-      // Calculate revenue impact
-      const loadTime = currentScanData._meta?.loadTimeMs || 1000;
-      const baselineTime = 500; // Amazon's baseline
-      const delayMs = Math.max(0, loadTime - baselineTime);
-      const delay100ms = delayMs / 100;
-      
-      // Amazon makes ~$574B/year, loses 1% per 100ms
-      const amazonRevenue = 574000000000;
-      const lossPercent = delay100ms * 1;
-      const annualLoss = amazonRevenue * (lossPercent / 100);
-      
-      // Animate from 0 to calculated values
-      animateValue('annualLoss', 0, annualLoss, 2000, '$');
-      animateValue('monthlyLoss', 0, annualLoss / 12, 2000, '$');
-      animateValue('dailyLoss', 0, annualLoss / 365, 2000, '$');
-    }
+    function showAmazonCalculator() {
+  const modal = document.getElementById('amazonModal');
+  modal.classList.add('show');
+  
+  // Check if this IS Amazon
+  const url = currentScanData.url.toLowerCase();
+  if (url.includes('amazon.com') || url.includes('amazon.co.uk') || url.includes('amazon.')) {
+    document.getElementById('amazonResults').innerHTML = `
+      <div class="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-lg mb-4 text-center">
+        <p class="text-6xl mb-4">🤔</p>
+        <p class="text-2xl font-bold text-orange-600 mb-2">Hold on...</p>
+        <p class="text-lg text-gray-700">This IS Amazon! They should see this!</p>
+        <p class="text-sm text-gray-600 mt-4 italic">(Maybe send them your P-Score? 😉)</p>
+      </div>
+    `;
+    return;
+  }
   
   // Calculate revenue impact
   const loadTime = currentScanData._meta?.loadTimeMs || 1000;
@@ -1260,6 +1207,24 @@
    function showComingSoon() {
   alert('📄 White Paper Coming Soon!');
 }
+
+    document.addEventListener('DOMContentLoaded', () => {
+    const urlInput = document.getElementById('urlInput');
+
+    // Check if the element exists before adding the listener
+    if (urlInput) {
+        urlInput.addEventListener('keydown', (event) => {
+            // Check for the Enter key
+            if (event.key === 'Enter') {
+                // Prevent form submission if the input is in a <form>
+                event.preventDefault(); 
+                
+                // Call the scan function
+                scanWebsite();
+            }
+        });
+    }
+});
     
     function getScoreColor(score) {
       if (score >= 80) return 'text-green-600';
