@@ -1225,6 +1225,19 @@
         });
     }
 });
+
+    const comparisonUrlInput = document.getElementById('comparisonUrlInput'); 
+
+    if (comparisonUrlInput) {
+        comparisonUrlInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault(); 
+                // Call the correct function for the comparison scan
+                scanComparisonWebsite(); 
+            }
+        });
+    }
+});
     
     function getScoreColor(score) {
       if (score >= 80) return 'text-green-600';
