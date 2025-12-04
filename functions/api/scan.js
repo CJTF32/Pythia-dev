@@ -1,9 +1,5 @@
 // ============================================================================
-// PYTHIA SCAN ENGINE - Research-Backed Weights + Plain Names
-// ============================================================================
-// All indices use plain descriptive names (speed, mobile, seo, etc.)
-// Weights based on revenue impact research from Amazon, Walmart, Google, etc.
-// Includes verification metadata to prove scans are real
+// PYTHIA SCAN ENGINE - Research-Backed Weights + Granular Scoring
 // ============================================================================
 
 export async function onRequestPost(context) {
@@ -22,7 +18,7 @@ export async function onRequestPost(context) {
     // Helper function to clamp scores between 0-100
     const clamp = (value) => Math.max(0, Math.min(100, value));
     
-    // Helper function for smooth score interpolation
+    // Helper function for smooth score interpolation (more granular)
     const smoothScore = (value, points) => {
       for (let i = 0; i < points.length - 1; i++) {
         const [x1, y1] = points[i];
@@ -44,25 +40,54 @@ export async function onRequestPost(context) {
       targetUrl = 'https://' + targetUrl;
     }
 
-    // Fetch the website
+    // Fetch the website with timeout
     const startTime = Date.now();
-    const response = await fetch(targetUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    });
-    const loadTime = Date.now() - startTime;
+    let response, loadTime, html;
     
-    if (!response.ok) {
-      return new Response(JSON.stringify({ 
-        error: `Failed to fetch: ${response.status}` 
-      }), {
-        status: 502,
-        headers: { 'Content-Type': 'application/json' }
+    try {
+      response = await fetch(targetUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        },
+        signal: AbortSignal.timeout(10000) // 10 second timeout
       });
+      loadTime = Date.now() - startTime;
+      
+      if (!response.ok) {
+        // Check if this is a blocked scan (403, 429, etc.)
+        if (response.status === 403 || response.status === 429) {
+          return new Response(JSON.stringify({ 
+            error: 'BLOCKED_SCAN',
+            message: 'This site blocks automated scans. Request a manual scan.',
+            status: response.status
+          }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        
+        return new Response(JSON.stringify({ 
+          error: `Failed to fetch: ${response.status}` 
+        }), {
+          status: 502,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      html = await response.text();
+    } catch (error) {
+      if (error.name === 'TimeoutError') {
+        return new Response(JSON.stringify({ 
+          error: 'TIMEOUT',
+          message: 'Site took too long to respond'
+        }), {
+          status: 504,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      throw error;
     }
 
-    const html = await response.text();
     const responseHeaders = response.headers;
     
     // Calculate page size
@@ -100,225 +125,263 @@ export async function onRequestPost(context) {
     const result = {};
 
     // ========================================================================
-    // CALCULATE 11 COMPONENT SCORES (Plain Names)
+    // CALCULATE 11 COMPONENT SCORES (Granular)
     // ========================================================================
 
-    // 1. SPEED - 30% weight
-    // Physics-aware: Apply 200ms baseline for network latency
+    // 1. SPEED - 30% weight (most granular based on continuous load time)
     const adjustedLoadTime = Math.max(0, loadTime - 200);
     const speedScore = smoothScore(adjustedLoadTime, [
       [0, 100],
-      [300, 95],
-      [500, 90],
-      [800, 85],
-      [1000, 80],
-      [1500, 70],
-      [2000, 60],
+      [100, 97.5],
+      [200, 95],
+      [300, 92.5],
+      [400, 90],
+      [500, 87.5],
+      [600, 85],
+      [800, 80],
+      [1000, 75],
+      [1500, 65],
+      [2000, 55],
       [3000, 40],
       [5000, 20],
       [10000, 0]
     ]);
-    result.speed = clamp(speedScore);
+    result.speed = Math.round(speedScore * 10) / 10; // Round to 1 decimal
 
-    // 2. MOBILE - 18% weight
+    // 2. MOBILE - 18% weight (granular with partial credit)
     let mobileScore = 0;
-    if (analysis.hasViewport) mobileScore += 40;
+    if (analysis.hasViewport) mobileScore += 35; // Essential
     
-    // Responsive images
-    if (analysis.hasWebP || analysis.hasAVIF) mobileScore += 25;
-    if (analysis.hasLazyLoading) mobileScore += 15;
+    // Responsive images (granular)
+    if (analysis.hasAVIF) mobileScore += 30;
+    else if (analysis.hasWebP) mobileScore += 22;
     
-    // Mobile-friendly size
-    if (sizeMB < 2) mobileScore += 20;
-    else if (sizeMB < 5) mobileScore += 10;
+    if (analysis.hasLazyLoading) mobileScore += 18;
     
-    result.mobile = clamp(mobileScore);
+    // Mobile-friendly size (continuous)
+    if (sizeMB < 1) mobileScore += 17;
+    else if (sizeMB < 2) mobileScore += 12;
+    else if (sizeMB < 3) mobileScore += 8;
+    else if (sizeMB < 5) mobileScore += 4;
+    
+    result.mobile = Math.round(mobileScore * 10) / 10;
 
-    // 3. SEO - 13% weight
+    // 3. SEO - 13% weight (granular)
     let seoScore = 0;
-    if (analysis.hasTitle) seoScore += 25;
-    if (analysis.hasDescription) seoScore += 25;
-    if (analysis.hasOG) seoScore += 20;
-    if (analysis.hasStructuredData) seoScore += 15;
-    if (analysis.hasHTTPS) seoScore += 15;
+    if (analysis.hasTitle) seoScore += 22;
+    if (analysis.hasDescription) seoScore += 24;
+    if (analysis.hasOG) seoScore += 18;
+    if (analysis.hasStructuredData) seoScore += 16;
+    if (analysis.hasHTTPS) seoScore += 12;
     
-    result.seo = clamp(seoScore);
+    // Bonus for good title length
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    if (titleMatch && titleMatch[1]) {
+      const titleLength = titleMatch[1].length;
+      if (titleLength >= 30 && titleLength <= 60) seoScore += 8;
+      else if (titleLength >= 20 && titleLength <= 70) seoScore += 4;
+    }
+    
+    result.seo = Math.round(seoScore * 10) / 10;
 
-    // 4. INTERACTIVITY - 10% weight
+    // 4. INTERACTIVITY - 10% weight (continuous)
     const interactivityScore = smoothScore(loadTime, [
       [0, 100],
-      [100, 95],
+      [50, 98],
+      [100, 96],
+      [200, 93],
       [300, 90],
       [500, 85],
-      [1000, 75],
-      [2000, 60],
-      [3000, 40],
-      [5000, 20],
+      [800, 78],
+      [1000, 72],
+      [1500, 62],
+      [2000, 52],
+      [3000, 38],
+      [5000, 18],
       [10000, 0]
     ]);
-    result.interactivity = clamp(interactivityScore);
+    result.interactivity = Math.round(interactivityScore * 10) / 10;
 
-    // 5. ACCESSIBILITY - 10% weight
-    let accessibilityScore = 20; // Base for valid HTML
-    if (analysis.hasAltText) accessibilityScore += 40;
-    if (analysis.hasAriaLabels) accessibilityScore += 30;
+    // 5. ACCESSIBILITY - 10% weight (granular)
+    let accessibilityScore = 15; // Base
+    
+    // Alt text coverage (estimate based on presence)
+    if (analysis.hasAltText) accessibilityScore += 38;
+    
+    // ARIA labels
+    if (analysis.hasAriaLabels) accessibilityScore += 32;
+    
+    // Viewport
     if (analysis.hasViewport) accessibilityScore += 10;
     
-    result.accessibility = clamp(accessibilityScore);
-
-    // 6. PRIVACY - 6% weight
-    let privacyScore = 0;
-    if (analysis.hasHTTPS) privacyScore += 40;
-    if (analysis.hasCSP) privacyScore += 20;
-    if (analysis.hasXFrameOptions) privacyScore += 15;
-    if (analysis.hasHSTS) privacyScore += 15;
-    if (analysis.hasPermissionsPolicy) privacyScore += 10;
+    // Semantic HTML bonus (check for headings)
+    if (/<h[1-6]/i.test(html)) accessibilityScore += 5;
     
-    result.privacy = clamp(privacyScore);
+    result.accessibility = Math.round(accessibilityScore * 10) / 10;
 
-    // 7. CDN - 5% weight
+    // 6. PRIVACY - 6% weight (granular)
+    let privacyScore = 0;
+    if (analysis.hasHTTPS) privacyScore += 35;
+    if (analysis.hasCSP) privacyScore += 22;
+    if (analysis.hasXFrameOptions) privacyScore += 16;
+    if (analysis.hasHSTS) privacyScore += 18;
+    if (analysis.hasPermissionsPolicy) privacyScore += 9;
+    
+    result.privacy = Math.round(privacyScore * 10) / 10;
+
+    // 7. CDN - 5% weight (granular)
     let cdnScore = 0;
     const cdnHeaders = responseHeaders.get('cf-ray') || 
                        responseHeaders.get('x-amz-cf-id') ||
                        responseHeaders.get('x-cache');
     
-    if (cdnHeaders) cdnScore += 50;
+    if (cdnHeaders) cdnScore += 48;
     
     const cacheControl = responseHeaders.get('cache-control');
     if (cacheControl) {
-      if (cacheControl.includes('max-age')) cdnScore += 30;
-      if (cacheControl.includes('public')) cdnScore += 10;
-      if (cacheControl.includes('immutable')) cdnScore += 10;
+      if (cacheControl.includes('max-age')) {
+        const maxAge = parseInt(cacheControl.match(/max-age=(\d+)/)?.[1] || '0');
+        if (maxAge > 86400) cdnScore += 28; // 1+ days
+        else if (maxAge > 3600) cdnScore += 18; // 1+ hours
+        else if (maxAge > 0) cdnScore += 8;
+      }
+      if (cacheControl.includes('public')) cdnScore += 12;
+      if (cacheControl.includes('immutable')) cdnScore += 12;
     }
     
-    result.cdn = clamp(cdnScore);
+    result.cdn = Math.round(cdnScore * 10) / 10;
 
-    // 8. PAGE WEIGHT - 4% weight
+    // 8. PAGE WEIGHT - 4% weight (continuous)
     const pageWeightScore = smoothScore(sizeMB, [
       [0, 100],
+      [0.3, 98],
       [0.5, 95],
-      [1, 90],
-      [2, 80],
-      [3, 70],
-      [5, 50],
-      [10, 25],
-      [20, 10],
+      [0.8, 92],
+      [1, 88],
+      [1.5, 82],
+      [2, 76],
+      [2.5, 70],
+      [3, 62],
+      [4, 52],
+      [5, 42],
+      [7, 28],
+      [10, 15],
+      [15, 8],
+      [20, 3],
       [50, 0]
     ]);
-    result.pageWeight = clamp(pageWeightScore);
+    result.pageWeight = Math.round(pageWeightScore * 10) / 10;
 
-    // 9. MODERN STANDARDS - 2% weight
+    // 9. MODERN STANDARDS - 2% weight (granular)
     let modernStandardsScore = 0;
-    if (analysis.hasAVIF) modernStandardsScore += 35;
-    else if (analysis.hasWebP) modernStandardsScore += 30;
-    if (analysis.hasLazyLoading) modernStandardsScore += 30;
-    if (analysis.hasViewport) modernStandardsScore += 20;
-    if (analysis.hasStructuredData) modernStandardsScore += 15;
+    if (analysis.hasAVIF) modernStandardsScore += 32;
+    else if (analysis.hasWebP) modernStandardsScore += 26;
+    if (analysis.hasLazyLoading) modernStandardsScore += 28;
+    if (analysis.hasViewport) modernStandardsScore += 18;
+    if (analysis.hasStructuredData) modernStandardsScore += 14;
     
-    result.modernStandards = clamp(modernStandardsScore);
+    // Check for modern JS patterns
+    if (/type=["']module["']/.test(html)) modernStandardsScore += 8;
+    
+    result.modernStandards = Math.round(modernStandardsScore * 10) / 10;
 
-    // 10. CODE QUALITY - 1% weight
-    let codeQualityScore = 60; // Baseline
+    // 10. CODE QUALITY - 1% weight (granular penalties)
+    let codeQualityScore = 65; // Baseline
     
-    if (analysis.blockingScripts === 0) {
-      codeQualityScore += 20;
-    } else {
-      codeQualityScore -= Math.min(20, analysis.blockingScripts * 3);
-    }
+    // Blocking scripts (continuous penalty)
+    codeQualityScore -= Math.min(25, analysis.blockingScripts * 1.8);
     
-    if (analysis.blockingCSS === 0) {
-      codeQualityScore += 20;
-    } else {
-      codeQualityScore -= Math.min(15, analysis.blockingCSS * 2.5);
-    }
+    // Blocking CSS (continuous penalty)
+    codeQualityScore -= Math.min(18, analysis.blockingCSS * 2.2);
     
-    if (analysis.resourceCount < 50) codeQualityScore += 10;
+    // Resource efficiency
+    if (analysis.resourceCount < 30) codeQualityScore += 12;
+    else if (analysis.resourceCount < 50) codeQualityScore += 8;
+    else if (analysis.resourceCount < 80) codeQualityScore += 4;
     else if (analysis.resourceCount > 150) {
-      codeQualityScore -= Math.min(10, (analysis.resourceCount - 150) * 0.1);
+      codeQualityScore -= Math.min(15, (analysis.resourceCount - 150) * 0.12);
     }
     
-    result.codeQuality = clamp(codeQualityScore);
+    result.codeQuality = Math.round(clamp(codeQualityScore) * 10) / 10;
 
-    // 11. SUSTAINABILITY - 1% weight
+    // 11. SUSTAINABILITY - 1% weight (granular)
     let sustainabilityScore = 0;
     
-    // Page Weight Efficiency (40 points max)
+    // Page Weight Efficiency (continuous)
     const weightScore = smoothScore(sizeMB, [
-      [0, 40],
-      [0.5, 38],
-      [1, 35],
-      [2, 28],
-      [2.4, 25],
+      [0, 38],
+      [0.5, 36],
+      [1, 33],
+      [1.5, 30],
+      [2, 27],
+      [2.4, 24],
       [3, 20],
-      [5, 10],
-      [10, 5],
-      [20, 2],
+      [4, 14],
+      [5, 9],
+      [7, 5],
+      [10, 2],
+      [20, 1],
       [50, 0]
     ]);
     sustainabilityScore += weightScore;
     
-    // Green Hosting Detection (25 points max)
+    // Green Hosting Detection
     if (responseHeaders.get('cf-ray')) {
-      sustainabilityScore += 25; // Cloudflare uses renewable energy
+      sustainabilityScore += 24;
     } else if (cdnHeaders) {
-      sustainabilityScore += 15; // Other CDNs
+      sustainabilityScore += 14;
     }
     
     // Cache bonus
     if (cacheControl) {
-      sustainabilityScore += 5;
+      sustainabilityScore += 6;
     }
     
-    // Image Optimization (20 points max)
+    // Image Optimization
     if (analysis.hasAVIF) {
-      sustainabilityScore += 20;
+      sustainabilityScore += 19;
     } else if (analysis.hasWebP) {
-      sustainabilityScore += 15;
+      sustainabilityScore += 14;
     }
     
     if (analysis.hasLazyLoading) {
-      sustainabilityScore += 10;
+      sustainabilityScore += 9;
     }
     
-    // Resource Efficiency (15 points max)
+    // Resource Efficiency (continuous)
     const resourceEfficiency = smoothScore(analysis.resourceCount, [
-      [0, 15],
-      [25, 15],
-      [50, 12],
-      [100, 8],
-      [150, 3],
+      [0, 14],
+      [20, 13],
+      [40, 11],
+      [60, 9],
+      [80, 7],
+      [100, 5],
+      [150, 2],
       [200, 0]
     ]);
     sustainabilityScore += resourceEfficiency;
     
-    result.sustainability = clamp(sustainabilityScore);
+    result.sustainability = Math.round(clamp(sustainabilityScore) * 10) / 10;
     
     // Calculate CO2 estimate
-    const carbonIntensity = responseHeaders.get('cf-ray') ? 50 : 442; // g CO2/kWh
-    const energyPerGB = 0.81; // kWh per GB
+    const carbonIntensity = responseHeaders.get('cf-ray') ? 50 : 442;
+    const energyPerGB = 0.81;
     const co2PerView = (sizeMB / 1024) * energyPerGB * carbonIntensity;
     
     result.sustainability_details = {
       score: result.sustainability,
-      co2PerView: Math.round(co2PerView * 1000) / 1000, // Round to 3 decimals
+      co2PerView: Math.round(co2PerView * 1000) / 1000,
       isGreenHosted: !!responseHeaders.get('cf-ray')
     };
 
     // ========================================================================
     // CALCULATE P-SCORE (Research-Backed Weights)
     // ========================================================================
-    // Speed (30%): Strongest correlation (1% revenue per 100ms)
-    // Mobile (18%): Critical for modern commerce
-    // SEO (13%): Search users convert 2-6x more
-    // Interactivity (10%): UX impact
-    // Accessibility (10%): Legal requirement
-    // Privacy (6%): GDPR compliance
-    // CDN (5%): Speed enabler
-    // Page Weight (4%): Mobile data costs
-    // Modern Standards (2%): Future-proofing
-    // Code Quality (1%): Technical foundation
-    // Sustainability (1%): ESG/brand value
-    // Total: 30+18+13+10+10+6+5+4+2+1+1 = 100% ✅
+    // Weights based on revenue impact research:
+    // Speed (30%), Mobile (18%), SEO (13%), Interactivity (10%),
+    // Accessibility (10%), Privacy (6%), CDN (5%), Page Weight (4%),
+    // Modern Standards (2%), Code Quality (1%), Sustainability (1%)
+    // Total: 100% ✅
     
     const pscore = 
       result.speed * 0.30 +
@@ -333,9 +396,9 @@ export async function onRequestPost(context) {
       result.codeQuality * 0.01 +
       result.sustainability * 0.01;
     
-    result.pscore = Math.round(pscore * 10) / 10; // Round to 1 decimal
+    result.pscore = Math.round(pscore * 10) / 10;
     
-    // Convert to credit rating
+    // Convert to Pythia Rating
     if (result.pscore >= 95) result.rating = 'AAA';
     else if (result.pscore >= 90) result.rating = 'AA';
     else if (result.pscore >= 85) result.rating = 'A';
@@ -346,7 +409,7 @@ export async function onRequestPost(context) {
     else if (result.pscore >= 60) result.rating = 'CC';
     else result.rating = 'C';
     
-    // Add transparency/verification data
+    // Add verification metadata
     result._meta = {
       scannedAt: new Date().toISOString(),
       loadTimeMs: loadTime,
