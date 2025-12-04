@@ -885,6 +885,20 @@
         document.getElementById('techComparisonPdfBtn').classList.add('hidden');
       }
     }
+
+    function displayResults(data, url) {
+  document.getElementById('scannedUrl').textContent = url;
+  document.getElementById('pscoreValue').textContent = data.pscore;
+  document.getElementById('ratingValue').textContent = data.rating;
+  document.getElementById('ratingValue').className = 'credit-rating mb-4 ' + getRatingColor(data.rating);
+  
+  displayOpportunityLoss(data);
+  displayTechShortfall(data);
+  generateFixRecommendations(data);
+  
+  document.getElementById('results').classList.remove('hidden');
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
     
     function displayOpportunityLoss(data) {
       const speedGap = 100 - (data.speed || 0);
