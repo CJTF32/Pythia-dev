@@ -344,6 +344,25 @@ export async function onRequestPost(context) {
     else if (result.pscore >= 65) result.rating = 'CCC';
     else if (result.pscore >= 60) result.rating = 'CC';
     else result.rating = 'C';
+    
+    // Add transparency/verification data
+    result._meta = {
+      scannedAt: new Date().toISOString(),
+      loadTimeMs: loadTime,
+      pageSizeMB: Math.round(sizeMB * 100) / 100,
+      resourceCount: analysis.resourceCount,
+      htmlAnalysis: {
+        hasHTTPS: analysis.hasHTTPS,
+        hasViewport: analysis.hasViewport,
+        hasTitle: analysis.hasTitle,
+        hasDescription: analysis.hasDescription,
+        hasWebP: analysis.hasWebP,
+        hasAVIF: analysis.hasAVIF,
+        hasLazyLoading: analysis.hasLazyLoading,
+        hasCSP: analysis.hasCSP,
+        hasHSTS: analysis.hasHSTS
+      }
+    };
 
     return new Response(JSON.stringify(result), {
       headers: { 
