@@ -117,21 +117,19 @@
           <h2 class="text-2xl font-bold text-gray-800 mb-4">Revenue Impact Calculator</h2>
           
           <div id="amazonResults" class="mb-6">
-            <div id="amazonCalculatorContent">
-              <p class="text-gray-700 mb-4">Based on your load time, if this were Amazon...</p>
-              <div class="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-lg mb-4">
-                <p class="text-sm text-gray-600 mb-2">Annual Revenue Loss</p>
-                <div id="annualLoss" class="text-4xl font-bold text-red-600 mb-4 count-up">$0</div>
-                
-                <div class="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <p class="text-xs text-gray-600">Per Month</p>
-                    <p id="monthlyLoss" class="text-xl font-bold text-orange-600 count-up">$0</p>
-                  </div>
-                  <div>
-                    <p class="text-xs text-gray-600">Per Day</p>
-                    <p id="dailyLoss" class="text-xl font-bold text-orange-600 count-up">$0</p>
-                  </div>
+            <p class="text-gray-700 mb-4">Based on your load time, if this were Amazon...</p>
+            <div class="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-lg mb-4">
+              <p class="text-sm text-gray-600 mb-2">Annual Revenue Loss</p>
+              <div id="annualLoss" class="text-4xl font-bold text-red-600 mb-4 count-up">$0</div>
+              
+              <div class="grid grid-cols-2 gap-4 text-center">
+                <div>
+                  <p class="text-xs text-gray-600">Per Month</p>
+                  <p id="monthlyLoss" class="text-xl font-bold text-orange-600 count-up">$0</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-600">Per Day</p>
+                  <p id="dailyLoss" class="text-xl font-bold text-orange-600 count-up">$0</p>
                 </div>
               </div>
             </div>
@@ -246,7 +244,7 @@
                 </div>
                 
                 <div class="mt-4 pt-4 border-t">
-                  <button onclick="downloadTechReport()" class="w-full py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700 font-medium mb-3">
+                  <button onclick="downloadTechReport()" class="w-full py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700 font-medium">
                     Download Tech PDF
                   </button>
                 </div>
@@ -487,7 +485,7 @@
         <h3 class="text-2xl font-bold text-gray-800 mb-4">Get in Touch</h3>
         <p class="text-gray-700 mb-4">Have questions? Want to discuss enterprise needs?</p>
         <p class="text-xl text-indigo-600 font-semibold">
-          <a href="/cdn-cgi/l/email-protection#5231203d3c3b2a3a3d3e363b3c352112353f333b3e7c313d3f" class="hover:underline"><span class="__cf_email__" data-cfemail="781b0a171611001017141c11161f0b381f15191114561b1715">[email&#160;protected]</span></a>
+          <a href="/cdn-cgi/l/email-protection#d0b3a2bfbeb9a8b8bfbcb4b9beb7a390b7bdb1b9bcfeb3bfbd" class="hover:underline"><span class="__cf_email__" data-cfemail="5132233e3f3829393e3d35383f362211363c30383d7f323e3c">[email&#160;protected]</span></a>
         </p>
       </div>
     </div>
@@ -589,6 +587,11 @@
     function toggleExpand(id) {
       const element = document.getElementById(id);
       element.classList.toggle('expanded');
+  
+    // Show tech PDF button when techDetails is expanded
+      if (id === 'techDetails' && element.classList.contains('expanded')) {
+      document.getElementById('techPdfBtn').classList.remove('hidden');
+      }
     }
     
     function showManualScanModal(url) {
@@ -612,34 +615,10 @@
   const modal = document.getElementById('amazonModal');
   modal.classList.add('show');
   
-  // Reset calculator content first
-  document.getElementById('amazonCalculatorContent').innerHTML = `
-    <p class="text-gray-700 mb-4">Based on your load time, if this were Amazon...</p>
-    <div class="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-lg mb-4">
-      <p class="text-sm text-gray-600 mb-2">Annual Revenue Loss</p>
-      <div id="annualLoss" class="text-4xl font-bold text-red-600 mb-4 count-up">$0</div>
-      
-      <div class="grid grid-cols-2 gap-4 text-center">
-        <div>
-          <p class="text-xs text-gray-600">Per Month</p>
-          <p id="monthlyLoss" class="text-xl font-bold text-orange-600 count-up">$0</p>
-        </div>
-        <div>
-          <p class="text-xs text-gray-600">Per Day</p>
-          <p id="dailyLoss" class="text-xl font-bold text-orange-600 count-up">$0</p>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  // Hide custom calculator
-  document.getElementById('customCalculator').classList.add('hidden');
-  document.getElementById('customResults').classList.add('hidden');
-  
   // Check if this IS Amazon
   const url = currentScanData.url.toLowerCase();
   if (url.includes('amazon.com') || url.includes('amazon.co.uk') || url.includes('amazon.')) {
-    document.getElementById('amazonCalculatorContent').innerHTML = `
+    document.getElementById('amazonResults').innerHTML = `
       <div class="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-lg mb-4 text-center">
         <p class="text-6xl mb-4">🤔</p>
         <p class="text-2xl font-bold text-orange-600 mb-2">Hold on...</p>
@@ -650,7 +629,7 @@
     return;
   }
   
-  // Calculate Amazon revenue impact
+  // Calculate revenue impact
   const loadTime = currentScanData._meta?.loadTimeMs || 1000;
   const baselineTime = 500; // Amazon's baseline
   const delayMs = Math.max(0, loadTime - baselineTime);
@@ -661,7 +640,7 @@
   const lossPercent = delay100ms * 1;
   const annualLoss = amazonRevenue * (lossPercent / 100);
   
-  // Animate from 0 to calculated value
+  // Animate from 0 to calculated values
   animateValue('annualLoss', 0, annualLoss, 2000, '$');
   animateValue('monthlyLoss', 0, annualLoss / 12, 2000, '$');
   animateValue('dailyLoss', 0, annualLoss / 365, 2000, '$');
