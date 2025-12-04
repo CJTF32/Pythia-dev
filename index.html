@@ -3,77 +3,51 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pythia - Website Performance Oracle</title>
+  <title>Pythia™ - Digital Health Agency</title>
   
   <!-- SEO Meta Tags -->
-  <meta name="description" content="Free website performance analysis. Get one unified P-Score measuring speed, accessibility, SEO, privacy, and sustainability. The Moody's of websites.">
-  <meta name="keywords" content="website performance, web performance, P-Score, performance testing, website rating, Pythia">
+  <meta name="description" content="Professional website performance analysis. Get your Pythia Rating measuring speed, accessibility, SEO, privacy, and sustainability. The Moody's of websites.">
+  <meta name="keywords" content="website performance, web performance, Pythia Rating, performance testing, website rating, digital health">
   
   <!-- Open Graph -->
-  <meta property="og:title" content="Pythia - Website Performance Oracle">
-  <meta property="og:description" content="Free website performance analysis. Get one unified P-Score measuring speed, accessibility, SEO, privacy, and sustainability.">
+  <meta property="og:title" content="Pythia™ - Digital Health Agency">
+  <meta property="og:description" content="Professional website performance analysis. Get your Pythia Rating measuring speed, accessibility, SEO, privacy, and sustainability.">
   <meta property="og:type" content="website">
   
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
-    /* Retro Mode Styles */
-    body.retro-mode {
-      background: #0a0a0a;
-      color: #00ff41;
-      font-family: 'Courier New', monospace;
+    /* Animated Background */
+    body {
+      position: relative;
+      overflow-x: hidden;
     }
     
-    body.retro-mode .card {
-      background: #1a1a1a;
-      border: 2px solid #00ff41;
-      box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+    #particleCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
     }
     
-    body.retro-mode .text-primary {
-      color: #00ff41 !important;
+    /* BETA Badge */
+    .beta-badge {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: bold;
+      z-index: 999;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
     }
     
-    body.retro-mode .text-gray-600,
-    body.retro-mode .text-gray-700,
-    body.retro-mode .text-gray-800 {
-      color: #00ff41 !important;
-    }
-    
-    body.retro-mode .text-gray-500 {
-      color: #00aa33 !important;
-    }
-    
-    body.retro-mode .btn-primary {
-      background: transparent;
-      border: 2px solid #00ff41;
-      color: #00ff41;
-    }
-    
-    body.retro-mode .btn-primary:hover {
-      background: #00ff41;
-      color: #0a0a0a;
-    }
-    
-    body.retro-mode input {
-      background: #1a1a1a;
-      border: 2px solid #00ff41;
-      color: #00ff41;
-    }
-    
-    body.retro-mode input::placeholder {
-      color: #00aa33;
-    }
-    
-    body.retro-mode .bg-gray-50,
-    body.retro-mode .bg-gray-100 {
-      background: #0f0f0f !important;
-    }
-    
-    body.retro-mode .border-gray-300 {
-      border-color: #00ff41 !important;
-    }
-    
-    /* Normal Mode Styles */
     .hamburger-menu {
       cursor: pointer;
       position: fixed;
@@ -93,11 +67,7 @@
       padding: 10px;
       z-index: 999;
       min-width: 200px;
-    }
-    
-    body.retro-mode .menu-dropdown {
-      background: #1a1a1a;
-      border-color: #00ff41;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     
     .menu-dropdown.show {
@@ -112,16 +82,8 @@
       border-radius: 4px;
     }
     
-    body.retro-mode .menu-item {
-      color: #00ff41;
-    }
-    
     .menu-item:hover {
       background: #eef2ff;
-    }
-    
-    body.retro-mode .menu-item:hover {
-      background: #003d1a;
     }
     
     .expandable {
@@ -131,7 +93,7 @@
     }
     
     .expandable.expanded {
-      max-height: 2000px;
+      max-height: 3000px;
     }
     
     .credit-rating {
@@ -145,9 +107,20 @@
         font-size: 80px;
       }
     }
+    
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+    }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
+
+  <!-- Animated Particle Background -->
+  <canvas id="particleCanvas"></canvas>
+
+  <!-- BETA Badge -->
+  <div class="beta-badge">BETA</div>
 
   <!-- Hamburger Menu -->
   <div class="hamburger-menu" onclick="toggleMenu()">
@@ -160,24 +133,23 @@
   
   <div class="menu-dropdown" id="menuDropdown">
     <a href="/" class="menu-item">Home</a>
-    <a href="/methodology.html" class="menu-item">Methodology</a>
     <a href="/about.html" class="menu-item">About</a>
-    <a href="/contact.html" class="menu-item">Contact</a>
-    <div class="menu-item" onclick="toggleRetroMode(); event.stopPropagation();">
-      <span id="modeToggleText">🎮 Enable Retro Mode</span>
-    </div>
+    <a href="/methodology.html" class="menu-item">Methodology</a>
+    <a href="/whitepaper.html" class="menu-item">White Paper</a>
+    <a href="/intelligence.html" class="menu-item">Competitive Intelligence</a>
+    <a href="mailto:cronixholdings@gmail.com" class="menu-item">Contact</a>
   </div>
 
   <div class="container mx-auto px-4 py-8 max-w-6xl">
     <!-- Header -->
     <div class="text-center mb-12">
-      <h1 class="text-5xl font-bold text-indigo-600 text-primary mb-3">Pythia</h1>
-      <p class="text-xl text-gray-600">Website Performance Oracle</p>
+      <h1 class="text-5xl font-bold text-indigo-600 mb-3">Pythia<sup class="text-2xl">™</sup></h1>
+      <p class="text-xl text-gray-600">Digital Health Agency</p>
       <p class="text-sm text-gray-500 mt-2">The Moody's of Websites</p>
     </div>
 
     <!-- Scan Form -->
-    <div class="card bg-white rounded-lg shadow-md p-8 mb-8">
+    <div class="card rounded-lg shadow-md p-8 mb-8">
       <div class="mb-4">
         <label class="block text-gray-700 font-medium mb-2">Enter Website URL</label>
         <div class="flex gap-2">
@@ -190,7 +162,7 @@
           <button 
             onclick="scanWebsite()" 
             id="scanBtn"
-            class="btn-primary px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+            class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
           >
             Scan
           </button>
@@ -200,23 +172,96 @@
       <div id="statusMessage" class="mt-4 text-center"></div>
     </div>
 
+    <!-- Manual Scan Request Modal (for blocked scans) -->
+    <div id="manualScanModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeManualScan(event)">
+      <div class="card rounded-lg shadow-xl p-8 max-w-md mx-4" onclick="event.stopPropagation()">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Manual Scan Required</h2>
+        <p class="text-gray-600 mb-6">This site blocks automated scans. Request a manual professional audit for $50.</p>
+        
+        <form id="manualScanForm" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+          <input type="hidden" name="scan_type" value="manual">
+          <input type="hidden" name="url" id="blockedUrl">
+          
+          <div class="mb-4">
+            <label class="block text-gray-700 font-medium mb-2">Your Email</label>
+            <input 
+              type="email" 
+              name="email"
+              required
+              class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
+              placeholder="you@company.com"
+            />
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-gray-700 font-medium mb-2">Website to Scan</label>
+            <input 
+              type="text" 
+              readonly
+              id="blockedUrlDisplay"
+              class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg bg-gray-50"
+            />
+          </div>
+          
+          <div class="mb-6">
+            <label class="block text-gray-700 font-medium mb-2">Additional Notes (Optional)</label>
+            <textarea 
+              name="notes"
+              rows="3"
+              class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
+              placeholder="Any specific concerns or requirements..."
+            ></textarea>
+          </div>
+          
+          <div class="flex gap-3">
+            <button 
+              type="button"
+              onclick="closeManualScan()"
+              class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+            >
+              Cancel
+            </button>
+            <button 
+              type="button"
+              onclick="processPayment()"
+              class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+            >
+              Pay $50 & Request
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Results -->
     <div id="results" class="hidden">
-      <!-- Credit Rating Card -->
-      <div class="card bg-white rounded-lg shadow-md p-12 mb-8 text-center">
-        <div class="credit-rating text-indigo-600 text-primary mb-4" id="ratingValue"></div>
-        <div class="text-2xl text-gray-600 mb-2">Credit Rating</div>
+      <!-- Pythia Rating Card -->
+      <div class="card rounded-lg shadow-md p-12 mb-8 text-center">
+        <div class="credit-rating text-indigo-600 mb-4" id="ratingValue"></div>
+        <div class="text-2xl text-gray-600 mb-2">Pythia™ Rating</div>
         <div class="text-xl text-gray-500">P-Score: <span id="pscoreValue" class="font-bold"></span>/100</div>
+        
+        <div class="mt-6">
+          <button 
+            onclick="downloadReport()"
+            class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium inline-flex items-center gap-2"
+          >
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/>
+            </svg>
+            Download PDF Report
+          </button>
+        </div>
       </div>
 
       <!-- Opportunity Loss & Tech Shortfall -->
       <div class="grid md:grid-cols-2 gap-6 mb-8">
         <!-- Opportunity Loss -->
-        <div class="card bg-white rounded-lg shadow-md p-6">
+        <div class="card rounded-lg shadow-md p-6">
           <h3 class="text-xl font-bold text-gray-800 mb-2">💰 Opportunity Loss</h3>
           <div class="text-4xl font-bold text-red-600 mb-2" id="opportunityLossValue">0%</div>
-          <p class="text-sm text-gray-600 mb-4">Estimated revenue impact from performance issues</p>
-          <button onclick="toggleExpand('opportunityDetails')" class="btn-primary w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+          <p class="text-sm text-gray-600 mb-4">Estimated negative business impact from performance issues</p>
+          <button onclick="toggleExpand('opportunityDetails')" class="w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700">
             Learn More
           </button>
           
@@ -228,8 +273,8 @@
               </div>
               
               <div>
-                <p class="font-semibold">Industry Benchmarks:</p>
-                <p class="text-gray-600">Average site: 3-5% conversion loss</p>
+                <p class="font-semibold">Industry Research:</p>
+                <p class="text-gray-600">Average site: 3-5% business impact</p>
                 <p class="text-gray-600">E-commerce: 1% revenue per 100ms delay</p>
                 <p class="text-gray-600">Search traffic: 2-6x higher conversion</p>
               </div>
@@ -243,7 +288,7 @@
                     placeholder="competitor.com"
                     class="flex-1 px-3 py-2 border-2 border-gray-300 rounded focus:border-indigo-500 focus:outline-none text-sm"
                   />
-                  <button onclick="scanCompetitor()" class="btn-primary px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm">
+                  <button onclick="scanCompetitor()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm">
                     Scan
                   </button>
                 </div>
@@ -254,67 +299,42 @@
         </div>
 
         <!-- Tech Shortfall -->
-        <div class="card bg-white rounded-lg shadow-md p-6">
+        <div class="card rounded-lg shadow-md p-6">
           <h3 class="text-xl font-bold text-gray-800 mb-2">⚙️ Tech Shortfall</h3>
           <div class="text-4xl font-bold text-orange-600 mb-2" id="techShortfallValue">0%</div>
           <p class="text-sm text-gray-600 mb-4">Performance gap to achieve 100% score</p>
-          <button onclick="toggleExpand('techDetails')" class="btn-primary w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+          <button onclick="toggleExpand('techDetails')" class="w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700">
             Learn More
           </button>
           
           <div id="techDetails" class="expandable mt-4 pt-4 border-t">
             <div class="text-sm space-y-3">
               <p class="font-semibold mb-2">Performance Breakdown:</p>
-              <div id="indexBreakdown" class="space-y-2">
-                <!-- Index details will be inserted here -->
-              </div>
-              
-              <div class="mt-4 pt-4 border-t">
-                <p class="font-semibold">Your Performance vs Benchmarks:</p>
-                <p id="benchmarkComparison" class="text-gray-600 mt-2"></p>
-              </div>
+              <div id="indexBreakdown" class="space-y-2"></div>
             </div>
           </div>
         </div>
       </div>
 
       <!-- How to Fix -->
-      <div class="card bg-white rounded-lg shadow-md p-8 mb-8">
+      <div class="card rounded-lg shadow-md p-8 mb-8">
         <h2 class="text-2xl font-bold text-gray-800 mb-4">🔧 How to Fix</h2>
         <p class="text-gray-600 mb-6">Priority improvements based on your performance analysis:</p>
-        
-        <div id="fixRecommendations" class="space-y-4">
-          <!-- Recommendations will be inserted here -->
-        </div>
+        <div id="fixRecommendations" class="space-y-4"></div>
       </div>
 
-      <!-- Raw Data / Debug Section -->
-      <div class="card bg-white rounded-lg shadow-md p-8">
+      <!-- Raw Data -->
+      <div class="card rounded-lg shadow-md p-8">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-2xl font-bold text-gray-800">📊 Raw Scan Data</h2>
-          <button onclick="toggleExpand('rawDataSection')" class="btn-primary py-2 px-4 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm">
+          <h2 class="text-2xl font-bold text-gray-800">📊 Technical Data</h2>
+          <button onclick="toggleExpand('rawDataSection')" class="py-2 px-4 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm">
             Show/Hide
           </button>
         </div>
         
         <div id="rawDataSection" class="expandable">
-          <p class="text-gray-600 text-sm mb-4">This shows the actual metrics measured during the scan to verify authenticity:</p>
-          
           <div class="bg-gray-50 p-4 rounded font-mono text-xs overflow-x-auto">
-            <pre id="rawDataDisplay" class="text-gray-800">Scan a website to see raw data...</pre>
-          </div>
-          
-          <div class="mt-4 text-sm text-gray-600">
-            <p class="font-semibold mb-2">What you're seeing:</p>
-            <ul class="list-disc ml-6 space-y-1">
-              <li><strong>_meta.loadTimeMs:</strong> Actual HTTP request time in milliseconds</li>
-              <li><strong>_meta.pageSizeMB:</strong> Real page weight calculated from HTML response</li>
-              <li><strong>_meta.htmlAnalysis:</strong> Boolean flags from parsing actual HTML</li>
-              <li><strong>_meta.resourceCount:</strong> Count of &lt;script&gt;, &lt;link&gt;, &lt;img&gt; tags found</li>
-              <li><strong>All scores:</strong> Calculated from these real measurements</li>
-            </ul>
-            
-            <p class="mt-3 text-xs italic">💡 Try scanning different sites - you'll see completely different metrics proving this is real analysis, not fake numbers.</p>
+            <pre id="rawDataDisplay" class="text-gray-800">Scan a website to see technical data...</pre>
           </div>
         </div>
       </div>
@@ -324,32 +344,71 @@
   </div>
 
   <script>
+    // Particle Animation
+    const canvas = document.getElementById('particleCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    const particles = [];
+    const particleCount = 100;
+    
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 2 + 1;
+        this.speedX = Math.random() * 0.5 - 0.25;
+        this.speedY = Math.random() * 0.5 - 0.25;
+        this.color = Math.random() > 0.5 ? 'rgba(99, 102, 241, 0.4)' : 'rgba(139, 92, 246, 0.4)';
+      }
+      
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        
+        if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+      }
+      
+      draw() {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    
+    for (let i = 0; i < particleCount; i++) {
+      particles.push(new Particle());
+    }
+    
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(particle => {
+        particle.update();
+        particle.draw();
+      });
+      requestAnimationFrame(animate);
+    }
+    
+    animate();
+    
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+    
+    // App Logic
     let currentScanData = null;
+    let blockedScanUrl = null;
     
     function toggleMenu() {
       const menu = document.getElementById('menuDropdown');
       menu.classList.toggle('show');
     }
     
-    function toggleRetroMode() {
-      document.body.classList.toggle('retro-mode');
-      const modeText = document.getElementById('modeToggleText');
-      if (document.body.classList.contains('retro-mode')) {
-        modeText.textContent = '💼 Enable Professional Mode';
-        localStorage.setItem('retroMode', 'true');
-      } else {
-        modeText.textContent = '🎮 Enable Retro Mode';
-        localStorage.setItem('retroMode', 'false');
-      }
-    }
-    
-    // Load saved mode preference
-    if (localStorage.getItem('retroMode') === 'true') {
-      document.body.classList.add('retro-mode');
-      document.getElementById('modeToggleText').textContent = '💼 Enable Professional Mode';
-    }
-    
-    // Close menu when clicking outside
     document.addEventListener('click', function(event) {
       const menu = document.getElementById('menuDropdown');
       const hamburger = document.querySelector('.hamburger-menu');
@@ -362,6 +421,25 @@
     function toggleExpand(id) {
       const element = document.getElementById(id);
       element.classList.toggle('expanded');
+    }
+    
+    function showManualScanModal(url) {
+      blockedScanUrl = url;
+      document.getElementById('blockedUrl').value = url;
+      document.getElementById('blockedUrlDisplay').value = url;
+      document.getElementById('manualScanModal').classList.remove('hidden');
+    }
+    
+    function closeManualScan(event) {
+      if (!event || event.target.id === 'manualScanModal') {
+        document.getElementById('manualScanModal').classList.add('hidden');
+      }
+    }
+    
+    function processPayment() {
+      // TODO: Integrate Stripe payment
+      alert('Stripe payment integration pending. Form will submit to cronixholdings@gmail.com');
+      document.getElementById('manualScanForm').submit();
     }
 
     async function scanWebsite() {
@@ -377,7 +455,6 @@
         return;
       }
       
-      // Show loading state
       scanBtn.disabled = true;
       scanBtn.textContent = 'Scanning...';
       statusMessage.innerHTML = '<p class="text-indigo-600 animate-pulse">Analyzing website performance...</p>';
@@ -392,13 +469,14 @@
           body: JSON.stringify({ url })
         });
         
-        if (!response.ok) {
-          throw new Error('Scan failed');
-        }
-        
         const data = await response.json();
         
         if (data.error) {
+          if (data.error === 'BLOCKED_SCAN') {
+            statusMessage.innerHTML = '';
+            showManualScanModal(url);
+            return;
+          }
           throw new Error(data.error);
         }
         
@@ -435,15 +513,9 @@
           body: JSON.stringify({ url })
         });
         
-        if (!response.ok) {
-          throw new Error('Scan failed');
-        }
-        
         const data = await response.json();
         
-        if (data.error) {
-          throw new Error(data.error);
-        }
+        if (data.error) throw new Error(data.error);
         
         const diff = currentScanData.pscore - data.pscore;
         const diffText = diff > 0 
@@ -453,75 +525,45 @@
         resultsDiv.innerHTML = `
           <div class="bg-gray-50 p-3 rounded">
             <p class="font-semibold text-sm">${url}</p>
-            <p class="text-sm">P-Score: ${data.pscore.toFixed(1)}/100 (${data.rating})</p>
+            <p class="text-sm">P-Score: ${data.pscore}/100 (${data.rating})</p>
             <p class="text-sm mt-1">Your site: ${diffText}</p>
           </div>
         `;
-        
       } catch (error) {
         resultsDiv.innerHTML = `<p class="text-red-600 text-sm">Error: ${error.message}</p>`;
       }
     }
     
     function displayResults(data) {
-      const results = document.getElementById('results');
-      const pscoreValue = document.getElementById('pscoreValue');
-      const ratingValue = document.getElementById('ratingValue');
+      document.getElementById('pscoreValue').textContent = data.pscore;
+      document.getElementById('ratingValue').textContent = data.rating;
+      document.getElementById('ratingValue').className = 'credit-rating mb-4 ' + getRatingColor(data.rating);
       
-      // Display P-Score and Rating
-      pscoreValue.textContent = data.pscore.toFixed(1);
-      ratingValue.textContent = data.rating;
-      ratingValue.className = 'credit-rating mb-4 ' + getRatingColor(data.rating);
-      
-      // Calculate Opportunity Loss
       displayOpportunityLoss(data);
-      
-      // Calculate Tech Shortfall
       displayTechShortfall(data);
-      
-      // Generate Fix Recommendations
       generateFixRecommendations(data);
-      
-      // Display Raw Data for verification
       displayRawData(data);
       
-      // Show results
-      results.classList.remove('hidden');
-      
-      // Scroll to results
-      results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById('results').classList.remove('hidden');
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     
     function displayOpportunityLoss(data) {
-      const opportunityLossValue = document.getElementById('opportunityLossValue');
-      const opportunityBreakdown = document.getElementById('opportunityBreakdown');
-      
-      // Get scores
-      const speedScore = data.speed || 0;
-      const mobileScore = data.mobile || 0;
-      const seoScore = data.seo || 0;
-      
-      // Calculate opportunity loss based on performance gaps
-      const speedGap = 100 - speedScore;
-      const mobileGap = 100 - mobileScore;
-      const seoGap = 100 - seoScore;
-      
-      // Research-backed calculations:
-      // Speed: 1% revenue per 10 points below 100
-      // Mobile: 0.5% conversion per 10 points below 100
-      // SEO: 0.3% traffic per 10 points below 100
+      const speedGap = 100 - (data.speed || 0);
+      const mobileGap = 100 - (data.mobile || 0);
+      const seoGap = 100 - (data.seo || 0);
       
       const speedLoss = (speedGap / 10) * 1.0;
       const mobileLoss = (mobileGap / 10) * 0.5;
       const seoLoss = (seoGap / 10) * 0.3;
-      
       const totalLoss = speedLoss + mobileLoss + seoLoss;
       
-      opportunityLossValue.textContent = totalLoss.toFixed(1) + '%';
-      opportunityLossValue.className = 'text-4xl font-bold mb-2 ' + (totalLoss > 5 ? 'text-red-600' : totalLoss > 2 ? 'text-orange-600' : 'text-green-600');
+      document.getElementById('opportunityLossValue').textContent = totalLoss.toFixed(1) + '%';
+      document.getElementById('opportunityLossValue').className = 'text-4xl font-bold mb-2 ' + 
+        (totalLoss > 5 ? 'text-red-600' : totalLoss > 2 ? 'text-orange-600' : 'text-green-600');
       
-      opportunityBreakdown.innerHTML = `
-        Speed impact: ${speedLoss.toFixed(1)}% revenue loss<br>
+      document.getElementById('opportunityBreakdown').innerHTML = `
+        Speed impact: ${speedLoss.toFixed(1)}% business loss<br>
         Mobile impact: ${mobileLoss.toFixed(1)}% conversion loss<br>
         SEO impact: ${seoLoss.toFixed(1)}% traffic loss<br>
         <strong>Total estimated impact: ${totalLoss.toFixed(1)}%</strong>
@@ -529,87 +571,64 @@
     }
     
     function displayTechShortfall(data) {
-      const techShortfallValue = document.getElementById('techShortfallValue');
-      const indexBreakdown = document.getElementById('indexBreakdown');
-      const benchmarkComparison = document.getElementById('benchmarkComparison');
-      
       const shortfall = 100 - data.pscore;
-      techShortfallValue.textContent = shortfall.toFixed(1) + '%';
-      techShortfallValue.className = 'text-4xl font-bold mb-2 ' + (shortfall > 20 ? 'text-red-600' : shortfall > 10 ? 'text-orange-600' : 'text-green-600');
+      document.getElementById('techShortfallValue').textContent = shortfall.toFixed(1) + '%';
+      document.getElementById('techShortfallValue').className = 'text-4xl font-bold mb-2 ' +
+        (shortfall > 20 ? 'text-red-600' : shortfall > 10 ? 'text-orange-600' : 'text-green-600');
       
-      // Component definitions with plain names
       const components = [
-        { name: 'Speed', score: data.speed || 0 },
-        { name: 'Mobile', score: data.mobile || 0 },
-        { name: 'SEO', score: data.seo || 0 },
-        { name: 'Interactivity', score: data.interactivity || 0 },
-        { name: 'Accessibility', score: data.accessibility || 0 },
-        { name: 'Privacy', score: data.privacy || 0 },
-        { name: 'CDN', score: data.cdn || 0 },
-        { name: 'Page Weight', score: data.pageWeight || 0 },
-        { name: 'Modern Standards', score: data.modernStandards || 0 },
-        { name: 'Code Quality', score: data.codeQuality || 0 },
-        { name: 'Sustainability', score: data.sustainability || 0 }
-      ];
+        { name: 'Speed', score: data.speed },
+        { name: 'Mobile', score: data.mobile },
+        { name: 'SEO', score: data.seo },
+        { name: 'Interactivity', score: data.interactivity },
+        { name: 'Accessibility', score: data.accessibility },
+        { name: 'Privacy', score: data.privacy },
+        { name: 'CDN', score: data.cdn },
+        { name: 'Page Weight', score: data.pageWeight },
+        { name: 'Modern Standards', score: data.modernStandards },
+        { name: 'Code Quality', score: data.codeQuality },
+        { name: 'Sustainability', score: data.sustainability }
+      ].sort((a, b) => a.score - b.score);
       
-      // Sort by score (lowest first - these need most improvement)
-      components.sort((a, b) => a.score - b.score);
-      
-      indexBreakdown.innerHTML = components.map(comp => {
+      document.getElementById('indexBreakdown').innerHTML = components.map(comp => {
         const gap = 100 - comp.score;
         return `
           <div class="flex justify-between items-center">
             <span>${comp.name}</span>
             <span class="${getScoreColor(comp.score)} font-semibold">
-              ${Math.round(comp.score)}/100 
-              ${gap > 20 ? '⚠️' : gap > 10 ? '⚡' : '✓'}
+              ${comp.score.toFixed(1)}/100 ${gap > 20 ? '⚠️' : gap > 10 ? '⚡' : '✓'}
             </span>
           </div>
         `;
       }).join('');
-      
-      // Benchmark comparison
-      const avgScore = 72; // Industry average
-      const diff = data.pscore - avgScore;
-      benchmarkComparison.innerHTML = diff > 0 
-        ? `Your site scores <strong class="text-green-600">${diff.toFixed(1)} points above</strong> the industry average (${avgScore})` 
-        : `Your site scores <strong class="text-red-600">${Math.abs(diff).toFixed(1)} points below</strong> the industry average (${avgScore})`;
     }
     
     function generateFixRecommendations(data) {
-      const fixRecommendations = document.getElementById('fixRecommendations');
-      
-      // Identify top issues
       const issues = [
-        { score: data.speed || 0, name: 'Speed', fix: 'Optimize images, enable compression, use CDN, minify code' },
-        { score: data.mobile || 0, name: 'Mobile', fix: 'Add viewport meta tag, use responsive images, enable lazy loading' },
-        { score: data.seo || 0, name: 'SEO', fix: 'Add meta descriptions, implement structured data, improve page titles' },
-        { score: data.interactivity || 0, name: 'Interactivity', fix: 'Reduce JavaScript execution time, defer non-critical scripts' },
-        { score: data.accessibility || 0, name: 'Accessibility', fix: 'Add alt text to images, use ARIA labels, ensure semantic HTML' },
-        { score: data.privacy || 0, name: 'Privacy', fix: 'Enable HTTPS, add security headers (CSP, HSTS, X-Frame-Options)' },
-        { score: data.cdn || 0, name: 'CDN', fix: 'Set up CDN, configure cache headers, enable compression' },
-        { score: data.pageWeight || 0, name: 'Page Weight', fix: 'Compress images, remove unused code, use modern formats (WebP, AVIF)' },
-        { score: data.modernStandards || 0, name: 'Modern Standards', fix: 'Use WebP/AVIF images, implement lazy loading, add structured data' },
-        { score: data.codeQuality || 0, name: 'Code Quality', fix: 'Remove blocking scripts, async/defer JavaScript, optimize CSS delivery' },
-        { score: data.sustainability || 0, name: 'Sustainability', fix: 'Reduce page weight, optimize images, use green hosting' }
-      ];
+        { score: data.speed, name: 'Speed', fix: 'Optimize images, enable compression, use CDN, minify code' },
+        { score: data.mobile, name: 'Mobile', fix: 'Add viewport meta tag, use responsive images, enable lazy loading' },
+        { score: data.seo, name: 'SEO', fix: 'Add meta descriptions, implement structured data, improve page titles' },
+        { score: data.interactivity, name: 'Interactivity', fix: 'Reduce JavaScript execution time, defer non-critical scripts' },
+        { score: data.accessibility, name: 'Accessibility', fix: 'Add alt text to images, use ARIA labels, ensure semantic HTML' },
+        { score: data.privacy, name: 'Privacy', fix: 'Enable HTTPS, add security headers (CSP, HSTS, X-Frame-Options)' },
+        { score: data.cdn, name: 'CDN', fix: 'Set up CDN, configure cache headers, enable compression' },
+        { score: data.pageWeight, name: 'Page Weight', fix: 'Compress images, remove unused code, use modern formats (WebP, AVIF)' },
+        { score: data.modernStandards, name: 'Modern Standards', fix: 'Use WebP/AVIF images, implement lazy loading, add structured data' },
+        { score: data.codeQuality, name: 'Code Quality', fix: 'Remove blocking scripts, async/defer JavaScript, optimize CSS delivery' },
+        { score: data.sustainability, name: 'Sustainability', fix: 'Reduce page weight, optimize images, use green hosting' }
+      ].sort((a, b) => a.score - b.score).slice(0, 5);
       
-      // Sort by score (lowest first)
-      issues.sort((a, b) => a.score - b.score);
-      
-      // Take top 5 issues
-      const topIssues = issues.slice(0, 5);
-      
-      fixRecommendations.innerHTML = topIssues.map((issue, index) => {
+      document.getElementById('fixRecommendations').innerHTML = issues.map((issue, index) => {
         const priority = index === 0 ? '🔴 Critical' : index === 1 ? '🟠 High' : '🟡 Medium';
+        const borderColor = index === 0 ? 'border-red-500' : index === 1 ? 'border-orange-500' : 'border-yellow-500';
         return `
-          <div class="border-l-4 ${index === 0 ? 'border-red-500' : index === 1 ? 'border-orange-500' : 'border-yellow-500'} pl-4 py-2">
+          <div class="border-l-4 ${borderColor} pl-4 py-2">
             <div class="flex justify-between items-start mb-2">
               <div>
                 <span class="font-semibold text-sm">${priority}</span>
                 <h3 class="font-bold text-lg">${issue.name}</h3>
               </div>
-              <span class="${getScoreColor(issue.score)} font-bold text-xl">${Math.round(issue.score)}/100</span>
+              <span class="${getScoreColor(issue.score)} font-bold text-xl">${issue.score.toFixed(1)}/100</span>
             </div>
             <p class="text-gray-600 text-sm">${issue.fix}</p>
           </div>
@@ -618,20 +637,10 @@
     }
     
     function displayRawData(data) {
-      const rawDataDisplay = document.getElementById('rawDataDisplay');
-      
-      // Format the raw data to prove scan is real
       const rawData = {
-        // Scan metadata (proves this is a real HTTP request)
-        _verification: data._meta || {
-          note: "Scan completed successfully"
-        },
-        
-        // Core measurements
+        _verification: data._meta,
         pscore: data.pscore,
         rating: data.rating,
-        
-        // All component scores (these vary by site)
         scores: {
           speed: data.speed,
           mobile: data.mobile,
@@ -645,12 +654,69 @@
           codeQuality: data.codeQuality,
           sustainability: data.sustainability
         },
-        
-        // Sustainability details (proves CO2 calculation)
-        sustainabilityDetails: data.sustainability_details || null
+        sustainabilityDetails: data.sustainability_details
       };
       
-      rawDataDisplay.textContent = JSON.stringify(rawData, null, 2);
+      document.getElementById('rawDataDisplay').textContent = JSON.stringify(rawData, null, 2);
+    }
+    
+    function downloadReport() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const data = currentScanData;
+      
+      // Header
+      doc.setFontSize(24);
+      doc.setTextColor(79, 70, 229);
+      doc.text('Pythia™ Performance Report', 20, 20);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Digital Health Agency', 20, 28);
+      
+      // Pythia Rating
+      doc.setFontSize(48);
+      doc.setTextColor(79, 70, 229);
+      doc.text(data.rating, 20, 50);
+      
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Pythia™ Rating`, 20, 58);
+      doc.text(`P-Score: ${data.pscore}/100`, 20, 65);
+      
+      // Component Scores
+      doc.setFontSize(14);
+      doc.text('Performance Breakdown', 20, 80);
+      
+      doc.setFontSize(10);
+      let y = 90;
+      const components = [
+        ['Speed', data.speed],
+        ['Mobile', data.mobile],
+        ['SEO', data.seo],
+        ['Interactivity', data.interactivity],
+        ['Accessibility', data.accessibility],
+        ['Privacy', data.privacy],
+        ['CDN', data.cdn],
+        ['Page Weight', data.pageWeight],
+        ['Modern Standards', data.modernStandards],
+        ['Code Quality', data.codeQuality],
+        ['Sustainability', data.sustainability]
+      ];
+      
+      components.forEach(([name, score]) => {
+        doc.text(`${name}:`, 20, y);
+        doc.text(`${score.toFixed(1)}/100`, 80, y);
+        y += 6;
+      });
+      
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text('Generated by Pythia™ - cronixholdings.com', 20, 280);
+      doc.text(`Scan Date: ${new Date().toLocaleDateString()}`, 20, 285);
+      
+      doc.save(`pythia-report-${data.pscore}.pdf`);
     }
     
     function getScoreColor(score) {
@@ -665,11 +731,8 @@
       return 'text-red-600';
     }
     
-    // Allow Enter key to trigger scan
     document.getElementById('urlInput').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        scanWebsite();
-      }
+      if (e.key === 'Enter') scanWebsite();
     });
   </script>
 
