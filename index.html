@@ -84,6 +84,13 @@
         <div class="card rounded-lg shadow-xl p-8 max-w-md mx-4" onclick="event.stopPropagation()">
           <h2 class="text-2xl font-bold text-gray-800 mb-4">Manual Scan Required</h2>
           <p class="text-gray-600 mb-6">This site blocks automated scans. Request a manual professional audit for $275.</p>
+
+          <!-- ADD THIS ENTIRE SECTION HERE: -->
+          <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
+            <p class="text-sm text-indigo-800 font-semibold mb-2">🚀 Test Mode</p>
+            <p class="text-sm text-indigo-700">Payment system is in test mode. Real payments will be enabled after our Product Hunt launch. For now, submit your request and we'll contact you directly.</p>
+          </div>
+          <!-- END OF NEW SECTION -->
           
           <form id="manualScanForm" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
             <input type="hidden" name="scan_type" value="manual">
@@ -473,7 +480,7 @@
 
       <div class="card rounded-lg shadow-md p-8 mb-8 bg-purple-50">
         <h3 class="text-2xl font-bold text-purple-800 mb-4">Manual Audit Service</h3>
-        <p class="text-gray-700 mb-4">Sites that block scans (Meta, Twitter/X): $275 per manual audit, 24-hour turnaround, expert recommendations.</p>
+        <p class="text-gray-700 mb-4">Sites that block scans (e.g. Meta): $275 per manual audit, 24-hour turnaround, expert recommendations.</p>
         <button onclick="scrollToSection('home')" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Request Manual Scan</button>
       </div>
       
