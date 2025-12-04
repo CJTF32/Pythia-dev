@@ -5,124 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pythia™ - Digital Health Agency</title>
   
-  <!-- SEO Meta Tags -->
-  <meta name="description" content="Professional website performance analysis. Get your Pythia Rating measuring speed, accessibility, SEO, privacy, and sustainability. The Moody's of websites.">
+  <meta name="description" content="Professional website performance analysis. Get your Pythia Rating measuring speed, accessibility, SEO, privacy, and sustainability.">
   <meta name="keywords" content="website performance, web performance, Pythia Rating, performance testing, website rating, digital health">
-  
-  <!-- Open Graph -->
-  <meta property="og:title" content="Pythia™ - Digital Health Agency">
-  <meta property="og:description" content="Professional website performance analysis. Get your Pythia Rating measuring speed, accessibility, SEO, privacy, and sustainability.">
-  <meta property="og:type" content="website">
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
-    /* Animated Background */
-    body {
-      position: relative;
-      overflow-x: hidden;
-    }
-    
-    #particleCanvas {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: -1;
-      pointer-events: none;
-    }
-    
-    /* BETA Badge */
-    .beta-badge {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: bold;
-      z-index: 999;
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-    }
-    
-    .hamburger-menu {
-      cursor: pointer;
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 1000;
-    }
-    
-    .menu-dropdown {
-      display: none;
-      position: fixed;
-      top: 60px;
-      right: 20px;
-      background: white;
-      border: 2px solid #4f46e5;
-      border-radius: 8px;
-      padding: 10px;
-      z-index: 999;
-      min-width: 200px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    
-    .menu-dropdown.show {
-      display: block;
-    }
-    
-    .menu-item {
-      display: block;
-      padding: 10px 15px;
-      color: #4f46e5;
-      text-decoration: none;
-      border-radius: 4px;
-    }
-    
-    .menu-item:hover {
-      background: #eef2ff;
-    }
-    
-    .expandable {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease-out;
-    }
-    
-    .expandable.expanded {
-      max-height: 3000px;
-    }
-    
-    .credit-rating {
-      font-size: 120px;
-      font-weight: bold;
-      line-height: 1;
-    }
-    
-    @media (max-width: 768px) {
-      .credit-rating {
-        font-size: 80px;
-      }
-    }
-    
-    .card {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-    }
+    html { scroll-behavior: smooth; }
+    body { position: relative; overflow-x: hidden; }
+    #particleCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+    .beta-badge { position: fixed; top: 20px; left: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; z-index: 999; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3); }
+    .hamburger-menu { cursor: pointer; position: fixed; top: 20px; right: 20px; z-index: 1000; }
+    .menu-dropdown { display: none; position: fixed; top: 60px; right: 20px; background: white; border: 2px solid #4f46e5; border-radius: 8px; padding: 10px; z-index: 999; min-width: 200px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .menu-dropdown.show { display: block; }
+    .menu-item { display: block; padding: 10px 15px; color: #4f46e5; text-decoration: none; border-radius: 4px; cursor: pointer; }
+    .menu-item:hover { background: #eef2ff; }
+    .expandable { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+    .expandable.expanded { max-height: 3000px; }
+    .credit-rating { font-size: 120px; font-weight: bold; line-height: 1; }
+    @media (max-width: 768px) { .credit-rating { font-size: 80px; } }
+    .card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+    .comparison-item { border: 2px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 8px; }
+    .section { min-height: 100vh; padding-top: 80px; }
+    .index-badge { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 4px 12px; border-radius: 4px; font-size: 14px; font-weight: bold; margin-right: 8px; }
+    .pricing-card { border: 2px solid #e5e7eb; transition: all 0.3s; }
+    .pricing-card:hover { border-color: #6366f1; transform: translateY(-4px); box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2); }
+    .pricing-card.featured { border-color: #6366f1; background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%); }
   </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-gray-50">
 
-  <!-- Animated Particle Background -->
   <canvas id="particleCanvas"></canvas>
-
-  <!-- BETA Badge -->
   <div class="beta-badge">BETA</div>
 
-  <!-- Hamburger Menu -->
   <div class="hamburger-menu" onclick="toggleMenu()">
     <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-600">
       <line x1="5" y1="8" x2="25" y2="8"/>
@@ -132,267 +47,426 @@
   </div>
   
   <div class="menu-dropdown" id="menuDropdown">
-    <a href="/" class="menu-item">Home</a>
-    <a href="/about.html" class="menu-item">About</a>
-    <a href="/methodology.html" class="menu-item">Methodology</a>
-    <a href="/whitepaper.html" class="menu-item">White Paper</a>
-    <a href="/intelligence.html" class="menu-item">Competitive Intelligence</a>
+    <div class="menu-item" onclick="scrollToSection('home')">Home</div>
+    <div class="menu-item" onclick="scrollToSection('about')">About</div>
+    <div class="menu-item" onclick="scrollToSection('methodology')">Methodology</div>
+    <div class="menu-item" onclick="scrollToSection('whitepaper')">White Paper</div>
+    <div class="menu-item" onclick="scrollToSection('intelligence')">Competitive Intelligence</div>
     <a href="mailto:cronixholdings@gmail.com" class="menu-item">Contact</a>
   </div>
 
-  <div class="container mx-auto px-4 py-8 max-w-6xl">
-    <!-- Header -->
-    <div class="text-center mb-12">
-      <h1 class="text-5xl font-bold text-indigo-600 mb-3">Pythia<sup class="text-2xl">™</sup></h1>
-      <p class="text-xl text-gray-600">Digital Health Agency</p>
-      <p class="text-sm text-gray-500 mt-2">The Moody's of Websites</p>
-    </div>
-
-    <!-- Scan Form -->
-    <div class="card rounded-lg shadow-md p-8 mb-8">
-      <div class="mb-4">
-        <label class="block text-gray-700 font-medium mb-2">Enter Website URL</label>
-        <div class="flex gap-2">
-          <input 
-            type="text" 
-            id="urlInput" 
-            placeholder="example.com or https://example.com"
-            class="flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
-          />
-          <button 
-            onclick="scanWebsite()" 
-            id="scanBtn"
-            class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
-          >
-            Scan
-          </button>
-        </div>
-      </div>
-      
-      <div id="statusMessage" class="mt-4 text-center"></div>
-    </div>
-
-    <!-- Manual Scan Request Modal (for blocked scans) -->
-    <div id="manualScanModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeManualScan(event)">
-      <div class="card rounded-lg shadow-xl p-8 max-w-md mx-4" onclick="event.stopPropagation()">
-        <h2 class="text-2xl font-bold text-gray-800 mb-4">Manual Scan Required</h2>
-        <p class="text-gray-600 mb-6">This site blocks automated scans. Request a manual professional audit for $50.</p>
-        
-        <form id="manualScanForm" action="https://formspree.io/f/mgvgzeve" method="POST">
-          <input type="hidden" name="scan_type" value="manual">
-          <input type="hidden" name="url" id="blockedUrl">
-          
-          <div class="mb-4">
-            <label class="block text-gray-700 font-medium mb-2">Your Email</label>
-            <input 
-              type="email" 
-              name="email"
-              required
-              class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
-              placeholder="you@company.com"
-            />
-          </div>
-          
-          <div class="mb-4">
-            <label class="block text-gray-700 font-medium mb-2">Website to Scan</label>
-            <input 
-              type="text" 
-              readonly
-              id="blockedUrlDisplay"
-              class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg bg-gray-50"
-            />
-          </div>
-          
-          <div class="mb-6">
-            <label class="block text-gray-700 font-medium mb-2">Additional Notes (Optional)</label>
-            <textarea 
-              name="notes"
-              rows="3"
-              class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
-              placeholder="Any specific concerns or requirements..."
-            ></textarea>
-          </div>
-          
-          <div class="flex gap-3">
-            <button 
-              type="button"
-              onclick="closeManualScan()"
-              class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
-            >
-              Cancel
-            </button>
-            <button 
-              type="button"
-              onclick="processPayment()"
-              class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
-            >
-              Pay $50 & Request
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Results -->
-    <div id="results" class="hidden">
-      <!-- Pythia Rating Card -->
-      <div class="card rounded-lg shadow-md p-12 mb-8 text-center">
-        <div class="credit-rating text-indigo-600 mb-4" id="ratingValue"></div>
-        <div class="text-2xl text-gray-600 mb-2">Pythia™ Rating</div>
-        <div class="text-xl text-gray-500">P-Score: <span id="pscoreValue" class="font-bold"></span>/100</div>
-        
-        <div class="mt-6">
-          <button 
-            onclick="downloadReport()"
-            class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium inline-flex items-center gap-2"
-          >
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/>
-            </svg>
-            Download PDF Report
-          </button>
-        </div>
+  <!-- HOME SECTION -->
+  <section id="home" class="section">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+      <div class="text-center mb-12">
+        <h1 class="text-5xl font-bold text-indigo-600 mb-3">Pythia<sup class="text-2xl">™</sup></h1>
+        <p class="text-xl text-gray-600">Digital Health Agency</p>
+        <p class="text-sm text-gray-500 mt-2">The Moody's of Websites</p>
       </div>
 
-      <!-- Opportunity Loss & Tech Shortfall -->
-      <div class="grid md:grid-cols-2 gap-6 mb-8">
-        <!-- Opportunity Loss -->
-        <div class="card rounded-lg shadow-md p-6">
-          <h3 class="text-xl font-bold text-gray-800 mb-2">💰 Opportunity Loss</h3>
-          <div class="text-4xl font-bold text-red-600 mb-2" id="opportunityLossValue">0%</div>
-          <p class="text-sm text-gray-600 mb-4">Estimated negative business impact from performance issues</p>
-          <button onclick="toggleExpand('opportunityDetails')" class="w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700">
-            Learn More
-          </button>
-          
-          <div id="opportunityDetails" class="expandable mt-4 pt-4 border-t">
-            <div class="text-sm space-y-3">
-              <div>
-                <p class="font-semibold">Your Site Impact:</p>
-                <p id="opportunityBreakdown" class="text-gray-600"></p>
-              </div>
-              
-              <div>
-                <p class="font-semibold">Industry Research:</p>
-                <p class="text-gray-600">Average site: 3-5% business impact</p>
-                <p class="text-gray-600">E-commerce: 1% revenue per 100ms delay</p>
-                <p class="text-gray-600">Search traffic: 2-6x higher conversion</p>
-              </div>
-              
-              <div class="mt-4">
-                <label class="block font-semibold mb-2">Compare with Competitor:</label>
-                <div class="flex gap-2">
-                  <input 
-                    type="text" 
-                    id="competitorUrl" 
-                    placeholder="competitor.com"
-                    class="flex-1 px-3 py-2 border-2 border-gray-300 rounded focus:border-indigo-500 focus:outline-none text-sm"
-                  />
-                  <button onclick="scanCompetitor()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm">
-                    Scan
-                  </button>
-                </div>
-                <div id="competitorResults" class="mt-3"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tech Shortfall -->
-        <div class="card rounded-lg shadow-md p-6">
-          <h3 class="text-xl font-bold text-gray-800 mb-2">⚙️ Tech Shortfall</h3>
-          <div class="text-4xl font-bold text-orange-600 mb-2" id="techShortfallValue">0%</div>
-          <p class="text-sm text-gray-600 mb-4">Performance gap to achieve 100% score</p>
-          <button onclick="toggleExpand('techDetails')" class="w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700">
-            Learn More
-          </button>
-          
-          <div id="techDetails" class="expandable mt-4 pt-4 border-t">
-            <div class="text-sm space-y-3">
-              <p class="font-semibold mb-2">Performance Breakdown:</p>
-              <div id="indexBreakdown" class="space-y-2"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- How to Fix -->
       <div class="card rounded-lg shadow-md p-8 mb-8">
-        <h2 class="text-2xl font-bold text-gray-800 mb-4">🔧 How to Fix</h2>
-        <p class="text-gray-600 mb-6">Priority improvements based on your performance analysis:</p>
-        <div id="fixRecommendations" class="space-y-4"></div>
+        <div class="mb-4">
+          <label class="block text-gray-700 font-medium mb-2">Enter Website URL</label>
+          <div class="flex gap-2">
+            <input type="text" id="urlInput" placeholder="example.com or https://example.com" class="flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none" />
+            <button onclick="scanWebsite()" id="scanBtn" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Scan</button>
+          </div>
+        </div>
+        <div id="statusMessage" class="mt-4 text-center"></div>
       </div>
 
-      <!-- Raw Data -->
-      <div class="card rounded-lg shadow-md p-8">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-2xl font-bold text-gray-800">📊 Technical Data</h2>
-          <button onclick="toggleExpand('rawDataSection')" class="py-2 px-4 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm">
-            Show/Hide
-          </button>
+      <div id="manualScanModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeManualScan(event)">
+        <div class="card rounded-lg shadow-xl p-8 max-w-md mx-4" onclick="event.stopPropagation()">
+          <h2 class="text-2xl font-bold text-gray-800 mb-4">Manual Scan Required</h2>
+          <p class="text-gray-600 mb-6">This site blocks automated scans. Request a manual professional audit for $50.</p>
+          
+          <form id="manualScanForm" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+            <input type="hidden" name="scan_type" value="manual">
+            <input type="hidden" name="url" id="blockedUrl">
+            
+            <div class="mb-4">
+              <label class="block text-gray-700 font-medium mb-2">Your Email</label>
+              <input type="email" name="email" required class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none" placeholder="you@company.com" />
+            </div>
+            
+            <div class="mb-4">
+              <label class="block text-gray-700 font-medium mb-2">Website to Scan</label>
+              <input type="text" readonly id="blockedUrlDisplay" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg bg-gray-50" />
+            </div>
+            
+            <div class="mb-6">
+              <label class="block text-gray-700 font-medium mb-2">Additional Notes (Optional)</label>
+              <textarea name="notes" rows="3" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none" placeholder="Any specific concerns..."></textarea>
+            </div>
+            
+            <div class="flex gap-3">
+              <button type="button" onclick="closeManualScan()" class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium">Cancel</button>
+              <button type="button" onclick="processPayment()" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Pay $50 & Request</button>
+            </div>
+          </form>
         </div>
-        
-        <div id="rawDataSection" class="expandable">
-          <div class="bg-gray-50 p-4 rounded font-mono text-xs overflow-x-auto">
-            <pre id="rawDataDisplay" class="text-gray-800">Scan a website to see technical data...</pre>
+      </div>
+
+      <div id="results" class="hidden">
+        <div class="card rounded-lg shadow-md p-12 mb-8 text-center">
+          <div class="credit-rating text-indigo-600 mb-4" id="ratingValue"></div>
+          <div class="text-2xl text-gray-600 mb-2">Pythia™ Rating</div>
+          <div class="text-xl text-gray-500">P-Score: <span id="pscoreValue" class="font-bold"></span>/100</div>
+          <div class="text-sm text-gray-400 mt-2" id="scannedUrl"></div>
+          
+          <div class="mt-6">
+            <button onclick="downloadReport()" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium inline-flex items-center gap-2">
+              <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/></svg>
+              Download PDF Report
+            </button>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6 mb-8">
+          <div class="card rounded-lg shadow-md p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-2">💰 Opportunity Loss</h3>
+            <div class="text-4xl font-bold text-red-600 mb-2" id="opportunityLossValue">0%</div>
+            <p class="text-sm text-gray-600 mb-4">Estimated negative business impact from performance issues</p>
+            <button onclick="toggleExpand('opportunityDetails')" class="w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700">Learn More</button>
+            
+            <div id="opportunityDetails" class="expandable mt-4 pt-4 border-t">
+              <div class="text-sm space-y-3">
+                <div>
+                  <p class="font-semibold">Your Site Impact:</p>
+                  <p id="opportunityBreakdown" class="text-gray-600"></p>
+                </div>
+                
+                <div>
+                  <p class="font-semibold">Industry Research:</p>
+                  <p class="text-gray-600">Average site: 3-5% business impact</p>
+                  <p class="text-gray-600">E-commerce: 1% revenue per 100ms delay</p>
+                  <p class="text-gray-600">Search traffic: 2-6x higher conversion</p>
+                </div>
+                
+                <div class="mt-4">
+                  <label class="block font-semibold mb-2">Compare with Competitors:</label>
+                  <div class="flex gap-2">
+                    <input type="text" id="competitorUrl" placeholder="competitor.com" class="flex-1 px-3 py-2 border-2 border-gray-300 rounded focus:border-indigo-500 focus:outline-none text-sm" />
+                    <button onclick="scanCompetitor()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm">Scan</button>
+                  </div>
+                  <div id="competitorResults" class="mt-3"></div>
+                  
+                  <div class="mt-4 flex gap-2">
+                    <button onclick="downloadComparisonReport()" class="flex-1 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm inline-flex items-center justify-center gap-2">
+                      <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/></svg>
+                      Download Comparison PDF
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card rounded-lg shadow-md p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-2">⚙️ Tech Shortfall</h3>
+            <div class="text-4xl font-bold text-orange-600 mb-2" id="techShortfallValue">0%</div>
+            <p class="text-sm text-gray-600 mb-4">Performance gap to achieve 100% score</p>
+            <button onclick="toggleExpand('techDetails')" class="w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700">Learn More</button>
+            
+            <div id="techDetails" class="expandable mt-4 pt-4 border-t">
+              <div class="text-sm space-y-3">
+                <p class="font-semibold mb-2">Performance Breakdown:</p>
+                <div id="indexBreakdown" class="space-y-2"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card rounded-lg shadow-md p-8 mb-8">
+          <h2 class="text-2xl font-bold text-gray-800 mb-4">🔧 How to Fix</h2>
+          <p class="text-gray-600 mb-6">Priority improvements based on your performance analysis:</p>
+          <div id="fixRecommendations" class="space-y-4"></div>
+        </div>
+
+        <div class="card rounded-lg shadow-md p-8">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-gray-800">📊 Technical Data</h2>
+            <button onclick="toggleExpand('rawDataSection')" class="py-2 px-4 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm">Show/Hide</button>
+          </div>
+          
+          <div id="rawDataSection" class="expandable">
+            <div class="bg-gray-50 p-4 rounded font-mono text-xs overflow-x-auto">
+              <pre id="rawDataDisplay" class="text-gray-800">Scan a website to see technical data...</pre>
+            </div>
           </div>
         </div>
       </div>
-
     </div>
+  </section>
 
-  </div>
+  <!-- ABOUT SECTION -->
+  <section id="about" class="section bg-white">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+      <div class="text-center mb-8">
+        <h2 class="text-4xl font-bold text-indigo-600 mb-2">About Pythia<sup class="text-xl">™</sup></h2>
+        <p class="text-xl text-gray-600">The Oracle of Web Performance</p>
+      </div>
+
+      <div class="card rounded-lg shadow-md p-8 mb-6">
+        <p class="text-gray-700 leading-relaxed">Named after the legendary Oracle of Delphi, Pythia<sup>™</sup> brings ancient wisdom to modern web analysis. We believe websites should be fast, accessible, private, and sustainable—not just profitable.</p>
+      </div>
+
+      <div class="card rounded-lg shadow-md p-8 mb-6">
+        <h3 class="text-2xl font-bold text-gray-800 mb-4">Our Mission</h3>
+        <p class="text-gray-700 leading-relaxed">To democratize website performance analysis by providing enterprise-grade insights in a simple, actionable format. Whether you're a Fortune 500 company or a solo blogger, your P-Score tells the truth.</p>
+      </div>
+
+      <div class="card rounded-lg shadow-md p-8 mb-6">
+        <h3 class="text-2xl font-bold text-gray-800 mb-4">How We're Different</h3>
+        <ul class="space-y-3 text-gray-700">
+          <li><strong>Holistic Analysis</strong> — 11 metrics, not just speed</li>
+          <li><strong>Privacy-First</strong> — We penalize trackers, not reward them</li>
+          <li><strong>Sustainability Matters</strong> — Green hosting badging built-in</li>
+          <li><strong>No Vendor Lock-in</strong> — Export your data anytime</li>
+          <li><strong>Transparent Methodology</strong> — Open about what we measure</li>
+        </ul>
+      </div>
+
+      <div class="card rounded-lg shadow-md p-8 mb-6">
+        <h3 class="text-2xl font-bold text-gray-800 mb-4">A Product of Cronix Holdings</h3>
+        <p class="text-gray-700 leading-relaxed mb-4"><strong>Making the Internet Fun Again</strong></p>
+        <p class="text-gray-700 leading-relaxed">Pythia<sup>™</sup> is developed and maintained by Cronix Holdings, a technology company focused on building tools that make tech better for everyone. We're committed to ethical AI, user privacy, and sustainable technology practices.</p>
+      </div>
+
+      <div class="card rounded-lg shadow-md p-8 mb-6 bg-purple-50">
+        <h3 class="text-2xl font-bold text-purple-800 mb-4">Beta Notice</h3>
+        <p class="text-gray-700 leading-relaxed">Pythia<sup>™</sup> is currently in public beta. Pythia's P-Score is provided for informational purposes only. We're actively refining our algorithms—your feedback shapes our roadmap!</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- METHODOLOGY SECTION -->
+  <section id="methodology" class="section">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+      <div class="text-center mb-8">
+        <h2 class="text-4xl font-bold text-indigo-600 mb-2">Methodology</h2>
+        <p class="text-xl text-gray-600">How We Rate Websites</p>
+      </div>
+
+      <div class="card rounded-lg shadow-md p-8 mb-6">
+        <p class="text-gray-700 leading-relaxed">Pythia<sup>™</sup> analyzes 11 critical indices to produce a unified P-Score (0-100) and Pythia<sup>™</sup> Rating (AAA-C). Think of it like a credit rating for websites.</p>
+      </div>
+
+      <div class="card rounded-lg shadow-md p-8 mb-6">
+        <h3 class="text-2xl font-bold text-gray-800 mb-6">The 11 Indices</h3>
+        
+        <div class="space-y-4 text-sm">
+          <div><span class="index-badge">1</span><strong>Speed</strong> - Page load performance, TTFB. Based on research showing 1% revenue loss per 100ms.</div>
+          <div><span class="index-badge">2</span><strong>Mobile</strong> - Mobile-first responsiveness, critical as mobile traffic dominates.</div>
+          <div><span class="index-badge">3</span><strong>SEO</strong> - Search optimization. Search traffic converts 2-6x more.</div>
+          <div><span class="index-badge">4</span><strong>Interactivity</strong> - User experience quality, JavaScript execution.</div>
+          <div><span class="index-badge">5</span><strong>Accessibility</strong> - Inclusive design, WCAG compliance, ADA requirements.</div>
+          <div><span class="index-badge">6</span><strong>Privacy</strong> - Security headers, HTTPS, GDPR compliance.</div>
+          <div><span class="index-badge">7</span><strong>CDN</strong> - Content delivery, caching strategy.</div>
+          <div><span class="index-badge">8</span><strong>Page Weight</strong> - File size optimization, mobile data costs.</div>
+          <div><span class="index-badge">9</span><strong>Modern Standards</strong> - WebP/AVIF, lazy loading, ES6.</div>
+          <div><span class="index-badge">10</span><strong>Code Quality</strong> - Maintainability, blocking resources.</div>
+          <div><span class="index-badge">11</span><strong>Sustainability</strong> - CO₂ per page view, green hosting.</div>
+        </div>
+      </div>
+
+      <div class="card rounded-lg shadow-md p-8 mb-6">
+        <h3 class="text-2xl font-bold text-gray-800 mb-4">Rating System</h3>
+        <div class="grid md:grid-cols-2 gap-3 text-sm">
+          <div class="border-l-4 border-green-600 pl-3 py-1"><strong class="text-green-600">AAA (95-100)</strong> Outstanding</div>
+          <div class="border-l-4 border-green-500 pl-3 py-1"><strong class="text-green-500">AA (90-94)</strong> Excellent</div>
+          <div class="border-l-4 border-green-400 pl-3 py-1"><strong class="text-green-400">A (85-89)</strong> Very Good</div>
+          <div class="border-l-4 border-yellow-500 pl-3 py-1"><strong class="text-yellow-600">BBB (80-84)</strong> Good</div>
+          <div class="border-l-4 border-yellow-400 pl-3 py-1"><strong class="text-yellow-600">BB (75-79)</strong> Fair</div>
+          <div class="border-l-4 border-orange-500 pl-3 py-1"><strong class="text-orange-600">B (70-74)</strong> Needs Improvement</div>
+          <div class="border-l-4 border-red-500 pl-3 py-1"><strong class="text-red-600">CCC-C (0-69)</strong> Critical Issues</div>
+        </div>
+      </div>
+
+      <div class="card rounded-lg shadow-md p-8">
+        <h3 class="text-2xl font-bold text-gray-800 mb-4">Research Foundation</h3>
+        <ul class="space-y-2 text-gray-700 text-sm">
+          <li>• Amazon: Every 100ms costs 1% revenue</li>
+          <li>• Walmart: 1s improvement = 2% conversion increase</li>
+          <li>• Google: 500ms delay = 25% query drop</li>
+          <li>• Mozilla: 2.2s improvement = 15.4% more downloads</li>
+        </ul>
+        <p class="text-gray-700 text-sm mt-4 italic">Exact weights are proprietary (like Moody's ratings).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHITE PAPER SECTION -->
+  <section id="whitepaper" class="section bg-white">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+      <div class="card rounded-lg shadow-md p-8 mb-6 text-center">
+        <h2 class="text-3xl font-bold text-gray-800 mb-4">The Translation Problem</h2>
+        <p class="text-gray-600 mb-2">Bridging Technical Metrics and Executive Decision-Making</p>
+        <p class="text-gray-600 text-sm">Pythia™ Research Team | December 2025</p>
+      </div>
+
+      <div class="card rounded-lg shadow-md p-8 mb-6 bg-indigo-50">
+        <h3 class="text-xl font-bold text-gray-800 mb-3">Abstract</h3>
+        <p class="text-gray-700 leading-relaxed text-sm">Website performance impacts revenue (1% per 100ms), yet a translation problem exists: technical teams measure in milliseconds, executives need simple answers. This paper presents Pythia™, a standardized rating system (AAA-C) that unifies 11 performance indices, similar to how Moody's rates bonds.</p>
+      </div>
+
+      <div class="card rounded-lg shadow-md p-8 mb-6">
+        <h3 class="text-xl font-bold text-gray-800 mb-3">Key Points</h3>
+        <ul class="space-y-2 text-gray-700 text-sm">
+          <li><strong>Problem:</strong> CIOs speak milliseconds, CMOs need "Is our site good enough?"</li>
+          <li><strong>Current Solutions:</strong> PageSpeed/GTmetrix lack business context</li>
+          <li><strong>Solution:</strong> Dual interface - Technical P-Score + Executive Rating</li>
+          <li><strong>Validation:</strong> 15,000+ scans, high correlation with business metrics</li>
+          <li><strong>Impact:</strong> Decision time reduced from weeks to days</li>
+        </ul>
+      </div>
+
+      <div class="card rounded-lg shadow-md p-8">
+        <h3 class="text-xl font-bold text-gray-800 mb-3">Research Citations</h3>
+        <div class="text-xs text-gray-600 space-y-1">
+          <p>[1] Amazon (2006) - 100ms latency costs 1% revenue</p>
+          <p>[2] Walmart (2012) - 1s improvement = 2% conversion</p>
+          <p>[3] Google (2009) - 500ms delay = 25% traffic drop</p>
+          <p>[4] Mozilla (2010) - 2.2s improvement = 15.4% conversions</p>
+          <p class="mt-4 italic">Full paper with complete methodology available upon request.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INTELLIGENCE SECTION -->
+  <section id="intelligence" class="section">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+      <div class="text-center mb-8">
+        <h2 class="text-4xl font-bold text-indigo-600 mb-2">Competitive Intelligence</h2>
+        <p class="text-xl text-gray-600">Agency-Grade Website Analysis</p>
+      </div>
+
+      <div class="card rounded-lg shadow-md p-8 mb-8">
+        <p class="text-lg text-gray-700 text-center">Stop losing deals because clients can't understand technical jargon. Pythia<sup>™</sup> translates performance data into executive-friendly ratings that close deals.</p>
+      </div>
+
+      <h3 class="text-3xl font-bold text-gray-800 mb-6 text-center">Service Tiers</h3>
+      
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div class="pricing-card card rounded-lg shadow-md p-6">
+          <div class="text-center mb-4">
+            <h4 class="text-2xl font-bold text-gray-800 mb-2">Starter</h4>
+            <div class="text-4xl font-bold text-indigo-600 mb-2">Free</div>
+            <p class="text-gray-600 text-sm">Forever</p>
+          </div>
+          <ul class="space-y-2 text-sm text-gray-700 mb-6">
+            <li>✓ Unlimited scans</li>
+            <li>✓ Basic P-Score</li>
+            <li>✓ 11-index breakdown</li>
+            <li>✓ PDF export</li>
+          </ul>
+          <button onclick="scrollToSection('home')" class="block text-center w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium">Get Started</button>
+        </div>
+
+        <div class="pricing-card card rounded-lg shadow-md p-6">
+          <div class="text-center mb-4">
+            <h4 class="text-2xl font-bold text-gray-800 mb-2">Professional</h4>
+            <div class="text-4xl font-bold text-indigo-600 mb-2">$99</div>
+            <p class="text-gray-600 text-sm">per month</p>
+          </div>
+          <ul class="space-y-2 text-sm text-gray-700 mb-6">
+            <li>✓ Everything in Starter</li>
+            <li>✓ Up to 5 comparisons</li>
+            <li>✓ Historical tracking</li>
+            <li>✓ Batch scanning</li>
+            <li>✓ White-label PDFs</li>
+            <li>✓ API (1K calls/mo)</li>
+          </ul>
+          <a href="mailto:cronixholdings@gmail.com?subject=Professional Plan" class="block text-center w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Contact Sales</a>
+        </div>
+
+        <div class="pricing-card featured card rounded-lg shadow-md p-6">
+          <div class="text-center mb-2">
+            <span class="inline-block bg-indigo-600 text-white text-xs px-3 py-1 rounded-full mb-2">MOST POPULAR</span>
+          </div>
+          <div class="text-center mb-4">
+            <h4 class="text-2xl font-bold text-gray-800 mb-2">Agency</h4>
+            <div class="text-4xl font-bold text-indigo-600 mb-2">$299</div>
+            <p class="text-gray-600 text-sm">per month</p>
+          </div>
+          <ul class="space-y-2 text-sm text-gray-700 mb-6">
+            <li>✓ Everything in Pro</li>
+            <li>✓ <strong>Unlimited comparisons</strong></li>
+            <li>✓ Client dashboards</li>
+            <li>✓ Priority support</li>
+            <li>✓ Custom branding</li>
+            <li>✓ API (10K calls/mo)</li>
+          </ul>
+          <a href="mailto:cronixholdings@gmail.com?subject=Agency Plan" class="block text-center w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Contact Sales</a>
+        </div>
+
+        <div class="pricing-card card rounded-lg shadow-md p-6">
+          <div class="text-center mb-4">
+            <h4 class="text-2xl font-bold text-gray-800 mb-2">Enterprise</h4>
+            <div class="text-4xl font-bold text-indigo-600 mb-2">Custom</div>
+            <p class="text-gray-600 text-sm">Contact us</p>
+          </div>
+          <ul class="space-y-2 text-sm text-gray-700 mb-6">
+            <li>✓ Everything in Agency</li>
+            <li>✓ Account manager</li>
+            <li>✓ Custom integrations</li>
+            <li>✓ SLA guarantees</li>
+            <li>✓ On-premise option</li>
+            <li>✓ Unlimited API</li>
+          </ul>
+          <a href="mailto:cronixholdings@gmail.com?subject=Enterprise Plan" class="block text-center w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium">Contact Sales</a>
+        </div>
+      </div>
+
+      <div class="card rounded-lg shadow-md p-8 mb-8 bg-purple-50">
+        <h3 class="text-2xl font-bold text-purple-800 mb-4">Manual Audit Service</h3>
+        <p class="text-gray-700 mb-4">Sites that block scans (Meta, Facebook, LinkedIn): $50 per manual audit, 24-hour turnaround, expert recommendations.</p>
+        <button onclick="scrollToSection('home')" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Request Manual Scan</button>
+      </div>
+    </div>
+  </section>
 
   <script>
-    // Particle Animation
+    // Particle animation
     const canvas = document.getElementById('particleCanvas');
     const ctx = canvas.getContext('2d');
-    
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     
     const particles = [];
-    const particleCount = 100;
+    const colors = [
+      'rgba(99, 102, 241, 0.3)', 'rgba(79, 70, 229, 0.3)',
+      'rgba(139, 92, 246, 0.3)', 'rgba(124, 58, 237, 0.3)',
+      'rgba(147, 51, 234, 0.3)', 'rgba(168, 85, 247, 0.3)',
+      'rgba(109, 40, 217, 0.3)', 'rgba(67, 56, 202, 0.3)'
+    ];
     
-    class Particle {
-      constructor() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 2 + 1;
-        this.speedX = Math.random() * 0.5 - 0.25;
-        this.speedY = Math.random() * 0.5 - 0.25;
-        this.color = Math.random() > 0.5 ? 'rgba(99, 102, 241, 0.4)' : 'rgba(139, 92, 246, 0.4)';
-      }
-      
-      update() {
-        this.x += this.speedX;
-        this.y += this.speedY;
-        
-        if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
-        if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
-      }
-      
-      draw() {
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    
-    for (let i = 0; i < particleCount; i++) {
-      particles.push(new Particle());
+    for (let i = 0; i < 120; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: Math.random() * 1 + 0.5,
+        speedX: Math.random() * 0.5 - 0.25,
+        speedY: Math.random() * 0.5 - 0.25,
+        color: colors[Math.floor(Math.random() * colors.length)]
+      });
     }
     
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach(particle => {
-        particle.update();
-        particle.draw();
+      particles.forEach(p => {
+        p.x += p.speedX;
+        p.y += p.speedY;
+        if (p.x < 0 || p.x > canvas.width) p.speedX *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.speedY *= -1;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
       });
       requestAnimationFrame(animate);
     }
-    
     animate();
     
     window.addEventListener('resize', () => {
@@ -400,31 +474,32 @@
       canvas.height = window.innerHeight;
     });
     
-    // App Logic
+    // Navigation
     let currentScanData = null;
-    let blockedScanUrl = null;
+    let comparisonScans = [];
+    
+    function scrollToSection(id) {
+      document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+      document.getElementById('menuDropdown').classList.remove('show');
+    }
     
     function toggleMenu() {
-      const menu = document.getElementById('menuDropdown');
-      menu.classList.toggle('show');
+      document.getElementById('menuDropdown').classList.toggle('show');
     }
     
     document.addEventListener('click', function(event) {
       const menu = document.getElementById('menuDropdown');
       const hamburger = document.querySelector('.hamburger-menu');
-      
       if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
         menu.classList.remove('show');
       }
     });
     
     function toggleExpand(id) {
-      const element = document.getElementById(id);
-      element.classList.toggle('expanded');
+      document.getElementById(id).classList.toggle('expanded');
     }
     
     function showManualScanModal(url) {
-      blockedScanUrl = url;
       document.getElementById('blockedUrl').value = url;
       document.getElementById('blockedUrlDisplay').value = url;
       document.getElementById('manualScanModal').classList.remove('hidden');
@@ -437,8 +512,7 @@
     }
     
     function processPayment() {
-      // TODO: Integrate Stripe payment
-      alert('Stripe payment integration pending. Form will submit to cronixholdings@gmail.com');
+      alert('Stripe integration pending');
       document.getElementById('manualScanForm').submit();
     }
 
@@ -459,13 +533,12 @@
       scanBtn.textContent = 'Scanning...';
       statusMessage.innerHTML = '<p class="text-indigo-600 animate-pulse">Analyzing website performance...</p>';
       results.classList.add('hidden');
+      comparisonScans = [];
       
       try {
         const response = await fetch('/api/scan', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url })
         });
         
@@ -480,8 +553,8 @@
           throw new Error(data.error);
         }
         
-        currentScanData = data;
-        displayResults(data);
+        currentScanData = { ...data, url };
+        displayResults(data, url);
         statusMessage.innerHTML = '';
         
       } catch (error) {
@@ -502,39 +575,63 @@
         return;
       }
       
-      resultsDiv.innerHTML = '<p class="text-gray-600 text-sm">Scanning competitor...</p>';
+      resultsDiv.innerHTML = '<p class="text-gray-600 text-sm">Scanning...</p>';
       
       try {
         const response = await fetch('/api/scan', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url })
         });
         
         const data = await response.json();
-        
         if (data.error) throw new Error(data.error);
         
-        const diff = currentScanData.pscore - data.pscore;
-        const diffText = diff > 0 
-          ? `<span class="text-green-600">+${diff.toFixed(1)} points ahead</span>` 
-          : `<span class="text-red-600">${diff.toFixed(1)} points behind</span>`;
+        comparisonScans.push({ ...data, url });
+        displayComparisons();
+        input.value = '';
         
-        resultsDiv.innerHTML = `
-          <div class="bg-gray-50 p-3 rounded">
-            <p class="font-semibold text-sm">${url}</p>
-            <p class="text-sm">P-Score: ${data.pscore}/100 (${data.rating})</p>
-            <p class="text-sm mt-1">Your site: ${diffText}</p>
-          </div>
-        `;
       } catch (error) {
         resultsDiv.innerHTML = `<p class="text-red-600 text-sm">Error: ${error.message}</p>`;
       }
     }
     
-    function displayResults(data) {
+    function displayComparisons() {
+      const resultsDiv = document.getElementById('competitorResults');
+      
+      if (comparisonScans.length === 0) {
+        resultsDiv.innerHTML = '';
+        return;
+      }
+      
+      resultsDiv.innerHTML = comparisonScans.map((comp, index) => {
+        const diff = currentScanData.pscore - comp.pscore;
+        const diffText = diff > 0 
+          ? `<span class="text-green-600">+${diff.toFixed(1)} pts ahead</span>` 
+          : `<span class="text-red-600">${diff.toFixed(1)} pts behind</span>`;
+        
+        return `
+          <div class="comparison-item bg-gray-50">
+            <div class="flex justify-between items-start">
+              <div class="flex-1">
+                <p class="font-semibold text-sm">${comp.url}</p>
+                <p class="text-sm text-gray-600">P-Score: ${comp.pscore}/100 (${comp.rating})</p>
+                <p class="text-sm mt-1">${currentScanData.url}: ${diffText}</p>
+              </div>
+              <button onclick="removeComparison(${index})" class="text-red-500 hover:text-red-700 text-sm ml-2">Remove</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function removeComparison(index) {
+      comparisonScans.splice(index, 1);
+      displayComparisons();
+    }
+    
+    function displayResults(data, url) {
+      document.getElementById('scannedUrl').textContent = url;
       document.getElementById('pscoreValue').textContent = data.pscore;
       document.getElementById('ratingValue').textContent = data.rating;
       document.getElementById('ratingValue').className = 'credit-rating mb-4 ' + getRatingColor(data.rating);
@@ -545,7 +642,7 @@
       displayRawData(data);
       
       document.getElementById('results').classList.remove('hidden');
-      document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
     }
     
     function displayOpportunityLoss(data) {
@@ -563,10 +660,10 @@
         (totalLoss > 5 ? 'text-red-600' : totalLoss > 2 ? 'text-orange-600' : 'text-green-600');
       
       document.getElementById('opportunityBreakdown').innerHTML = `
-        Speed impact: ${speedLoss.toFixed(1)}% business loss<br>
-        Mobile impact: ${mobileLoss.toFixed(1)}% conversion loss<br>
-        SEO impact: ${seoLoss.toFixed(1)}% traffic loss<br>
-        <strong>Total estimated impact: ${totalLoss.toFixed(1)}%</strong>
+        Speed: ${speedLoss.toFixed(1)}%<br>
+        Mobile: ${mobileLoss.toFixed(1)}%<br>
+        SEO: ${seoLoss.toFixed(1)}%<br>
+        <strong>Total: ${totalLoss.toFixed(1)}%</strong>
       `;
     }
     
@@ -593,7 +690,7 @@
       document.getElementById('indexBreakdown').innerHTML = components.map(comp => {
         const gap = 100 - comp.score;
         return `
-          <div class="flex justify-between items-center">
+          <div class="flex justify-between">
             <span>${comp.name}</span>
             <span class="${getScoreColor(comp.score)} font-semibold">
               ${comp.score.toFixed(1)}/100 ${gap > 20 ? '⚠️' : gap > 10 ? '⚡' : '✓'}
@@ -605,17 +702,17 @@
     
     function generateFixRecommendations(data) {
       const issues = [
-        { score: data.speed, name: 'Speed', fix: 'Optimize images, enable compression, use CDN, minify code' },
-        { score: data.mobile, name: 'Mobile', fix: 'Add viewport meta tag, use responsive images, enable lazy loading' },
-        { score: data.seo, name: 'SEO', fix: 'Add meta descriptions, implement structured data, improve page titles' },
-        { score: data.interactivity, name: 'Interactivity', fix: 'Reduce JavaScript execution time, defer non-critical scripts' },
-        { score: data.accessibility, name: 'Accessibility', fix: 'Add alt text to images, use ARIA labels, ensure semantic HTML' },
-        { score: data.privacy, name: 'Privacy', fix: 'Enable HTTPS, add security headers (CSP, HSTS, X-Frame-Options)' },
-        { score: data.cdn, name: 'CDN', fix: 'Set up CDN, configure cache headers, enable compression' },
-        { score: data.pageWeight, name: 'Page Weight', fix: 'Compress images, remove unused code, use modern formats (WebP, AVIF)' },
-        { score: data.modernStandards, name: 'Modern Standards', fix: 'Use WebP/AVIF images, implement lazy loading, add structured data' },
-        { score: data.codeQuality, name: 'Code Quality', fix: 'Remove blocking scripts, async/defer JavaScript, optimize CSS delivery' },
-        { score: data.sustainability, name: 'Sustainability', fix: 'Reduce page weight, optimize images, use green hosting' }
+        { score: data.speed, name: 'Speed', fix: 'Optimize images, enable compression, use CDN' },
+        { score: data.mobile, name: 'Mobile', fix: 'Add viewport, use responsive images, lazy loading' },
+        { score: data.seo, name: 'SEO', fix: 'Add meta descriptions, structured data' },
+        { score: data.interactivity, name: 'Interactivity', fix: 'Defer non-critical scripts' },
+        { score: data.accessibility, name: 'Accessibility', fix: 'Add alt text, ARIA labels' },
+        { score: data.privacy, name: 'Privacy', fix: 'Enable HTTPS, security headers' },
+        { score: data.cdn, name: 'CDN', fix: 'Configure CDN, cache headers' },
+        { score: data.pageWeight, name: 'Page Weight', fix: 'Compress images, remove unused code' },
+        { score: data.modernStandards, name: 'Modern Standards', fix: 'Use WebP/AVIF, lazy loading' },
+        { score: data.codeQuality, name: 'Code Quality', fix: 'Remove blocking scripts, async JS' },
+        { score: data.sustainability, name: 'Sustainability', fix: 'Reduce page weight, green hosting' }
       ].sort((a, b) => a.score - b.score).slice(0, 5);
       
       document.getElementById('fixRecommendations').innerHTML = issues.map((issue, index) => {
@@ -623,7 +720,7 @@
         const borderColor = index === 0 ? 'border-red-500' : index === 1 ? 'border-orange-500' : 'border-yellow-500';
         return `
           <div class="border-l-4 ${borderColor} pl-4 py-2">
-            <div class="flex justify-between items-start mb-2">
+            <div class="flex justify-between mb-2">
               <div>
                 <span class="font-semibold text-sm">${priority}</span>
                 <h3 class="font-bold text-lg">${issue.name}</h3>
@@ -637,27 +734,18 @@
     }
     
     function displayRawData(data) {
-      const rawData = {
+      document.getElementById('rawDataDisplay').textContent = JSON.stringify({
         _verification: data._meta,
         pscore: data.pscore,
         rating: data.rating,
         scores: {
-          speed: data.speed,
-          mobile: data.mobile,
-          seo: data.seo,
-          interactivity: data.interactivity,
-          accessibility: data.accessibility,
-          privacy: data.privacy,
-          cdn: data.cdn,
-          pageWeight: data.pageWeight,
-          modernStandards: data.modernStandards,
-          codeQuality: data.codeQuality,
+          speed: data.speed, mobile: data.mobile, seo: data.seo,
+          interactivity: data.interactivity, accessibility: data.accessibility,
+          privacy: data.privacy, cdn: data.cdn, pageWeight: data.pageWeight,
+          modernStandards: data.modernStandards, codeQuality: data.codeQuality,
           sustainability: data.sustainability
-        },
-        sustainabilityDetails: data.sustainability_details
-      };
-      
-      document.getElementById('rawDataDisplay').textContent = JSON.stringify(rawData, null, 2);
+        }
+      }, null, 2);
     }
     
     function downloadReport() {
@@ -665,58 +753,59 @@
       const doc = new jsPDF();
       const data = currentScanData;
       
-      // Header
-      doc.setFontSize(24);
+      doc.setFontSize(20);
       doc.setTextColor(79, 70, 229);
-      doc.text('Pythia™ Performance Report', 20, 20);
+      doc.text('Pythia™ Report', 20, 20);
       
       doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text('Digital Health Agency', 20, 28);
+      doc.setTextColor(100);
+      doc.text(`URL: ${data.url}`, 20, 28);
+      doc.text(`Date: ${new Date(data._meta?.scannedAt || Date.now()).toLocaleString()}`, 20, 34);
       
-      // Pythia Rating
-      doc.setFontSize(48);
-      doc.setTextColor(79, 70, 229);
-      doc.text(data.rating, 20, 50);
-      
+      doc.setFontSize(40);
+      doc.text(data.rating, 25, 55);
       doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      doc.text(`Pythia™ Rating`, 20, 58);
-      doc.text(`P-Score: ${data.pscore}/100`, 20, 65);
+      doc.text(`P-Score: ${data.pscore}/100`, 70, 50);
       
-      // Component Scores
-      doc.setFontSize(14);
-      doc.text('Performance Breakdown', 20, 80);
-      
+      let y = 70;
       doc.setFontSize(10);
-      let y = 90;
-      const components = [
-        ['Speed', data.speed],
-        ['Mobile', data.mobile],
-        ['SEO', data.seo],
-        ['Interactivity', data.interactivity],
-        ['Accessibility', data.accessibility],
-        ['Privacy', data.privacy],
-        ['CDN', data.cdn],
-        ['Page Weight', data.pageWeight],
-        ['Modern Standards', data.modernStandards],
-        ['Code Quality', data.codeQuality],
-        ['Sustainability', data.sustainability]
-      ];
-      
-      components.forEach(([name, score]) => {
-        doc.text(`${name}:`, 20, y);
-        doc.text(`${score.toFixed(1)}/100`, 80, y);
+      ['Speed', 'Mobile', 'SEO', 'Interactivity', 'Accessibility', 'Privacy', 'CDN', 'Page Weight', 'Modern Standards', 'Code Quality', 'Sustainability'].forEach((name, i) => {
+        const scores = [data.speed, data.mobile, data.seo, data.interactivity, data.accessibility, data.privacy, data.cdn, data.pageWeight, data.modernStandards, data.codeQuality, data.sustainability];
+        doc.text(`${name}: ${scores[i].toFixed(1)}/100`, 20, y);
         y += 6;
       });
       
-      // Footer
       doc.setFontSize(8);
-      doc.setTextColor(150, 150, 150);
       doc.text('Generated by Pythia™ - cronixholdings.com', 20, 280);
-      doc.text(`Scan Date: ${new Date().toLocaleDateString()}`, 20, 285);
       
       doc.save(`pythia-report-${data.pscore}.pdf`);
+    }
+    
+    function downloadComparisonReport() {
+      if (comparisonScans.length === 0) {
+        alert('Scan competitors first');
+        return;
+      }
+      
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      doc.setFontSize(18);
+      doc.text('Pythia™ Comparison', 20, 20);
+      
+      doc.setFontSize(10);
+      doc.text(`Your Site: ${currentScanData.url}`, 20, 35);
+      doc.text(`P-Score: ${currentScanData.pscore}/100 (${currentScanData.rating})`, 20, 42);
+      
+      let y = 55;
+      comparisonScans.forEach((comp, i) => {
+        const diff = currentScanData.pscore - comp.pscore;
+        doc.text(`${i+1}. ${comp.url}`, 20, y);
+        doc.text(`P-Score: ${comp.pscore}/100 | Diff: ${diff > 0 ? '+' : ''}${diff.toFixed(1)}`, 30, y+6);
+        y += 15;
+      });
+      
+      doc.save('pythia-comparison.pdf');
     }
     
     function getScoreColor(score) {
