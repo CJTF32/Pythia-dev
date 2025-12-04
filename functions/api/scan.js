@@ -151,61 +151,173 @@ export async function onRequestPost(context) {
     
     const isLoginPage = loginIndicatorCount >= 3;
 
-    // ========================================================================
-    // NEW: CLASSIFY SECTOR
-    // ========================================================================
-    const domain = new URL(targetUrl).hostname.replace('www.', '');
-    
-    const classifySector = (domain) => {
-      const d = domain.toLowerCase();
-      
-      // Technology & Software
-      if (/google|microsoft|apple|adobe|github|stackoverflow|reddit|twitter|x\.com|meta|telegram|zoom|dropbox|linkedin|slack|discord|twitch|spotify|tiktok|snap/.test(d)) {
-        return 'Technology & Software';
-      }
-      
-      // E-commerce & Retail
-      if (/amazon|ebay|alibaba|walmart|target|etsy|shop|store/.test(d)) {
-        return 'E-commerce & Retail';
-      }
-      
-      // Media & Entertainment
-      if (/netflix|youtube|hulu|disney|hbo|espn|nytimes|bbc|cnn|news|media/.test(d)) {
-        return 'Media & Entertainment';
-      }
-      
-      // Financial Services
-      if (/bank|paypal|visa|mastercard|chase|wells|citi|finance|invest|trading|crypto/.test(d)) {
-        return 'Financial Services';
-      }
-      
-      // Education
-      if (/\.edu|university|college|school|academic|coursera|udemy|khan/.test(d)) {
-        return 'Education';
-      }
-      
-      // Healthcare
-      if (/health|medical|hospital|clinic|pharma|medicine|doctor/.test(d)) {
-        return 'Healthcare';
-      }
-      
-      // Government
-      if (/\.gov|government/.test(d)) {
-        return 'Government';
-      }
-      
-      // Travel & Hospitality
-      if (/booking|airbnb|hotel|travel|flight|trip|vacation|expedia|tripadvisor/.test(d)) {
-        return 'Travel & Hospitality';
-      }
-      
-      return 'General';
-    };
-    
-    const sector = classifySector(domain);
+    // ============================================================================
+// PYTHIA SECTOR CLASSIFIER - For use in scan.js
+// ============================================================================
+// Detects website sector based on domain keywords and TLD patterns
+// Usage: const sector = classifySector('example.com');
 
-    // Initialize result object
-    const result = {};
+const SECTOR_RULES = {
+  'Technology & Software': {
+    keywords: [
+      // Social media
+      'facebook', 'instagram', 'twitter', 'x.com', 'linkedin', 'reddit',
+      'tiktok', 'snapchat', 'pinterest', 'tumblr', 'discord', 'telegram',
+      // Tech giants
+      'google', 'microsoft', 'apple', 'amazon', 'meta',
+      // Developer
+      'github', 'gitlab', 'stackoverflow', 'bitbucket',
+      // SaaS
+      'slack', 'zoom', 'dropbox', 'adobe', 'salesforce', 'atlassian',
+      'notion', 'figma', 'canva', 'asana',
+      // Streaming
+      'spotify', 'soundcloud', 'twitch', 'youtube',
+      // Cloud
+      'cloud', 'aws', 'azure', 'cloudflare',
+      // Patterns
+      'software', 'saas', 'platform', 'app'
+    ],
+    tldPatterns: ['.io', '.dev', '.app', '.cloud', '.tech']
+  },
+  
+  'E-commerce & Retail': {
+    keywords: [
+      'amazon', 'ebay', 'alibaba', 'aliexpress', 'walmart', 'target',
+      'etsy', 'shop', 'store', 'buy', 'cart', 'checkout', 'shopping',
+      'retail', 'marketplace', 'mall', 'outlet', 'ecommerce'
+    ]
+  },
+  
+  'Media & Entertainment': {
+    keywords: [
+      'netflix', 'youtube', 'hulu', 'disney', 'hbo',
+      'cnn', 'bbc', 'nytimes', 'guardian', 'reuters', 'forbes',
+      'espn', 'nba', 'nfl',
+      'news', 'media', 'video', 'stream', 'tv', 'entertainment',
+      'music', 'podcast', 'radio'
+    ]
+  },
+  
+  'Financial Services': {
+    keywords: [
+      'bank', 'chase', 'wellsfargo', 'citi', 'hsbc',
+      'paypal', 'stripe', 'square', 'visa', 'mastercard',
+      'fidelity', 'vanguard', 'schwab', 'robinhood',
+      'coinbase', 'binance', 'crypto', 'bitcoin',
+      'finance', 'invest', 'trading', 'capital', 'credit',
+      'loan', 'mortgage', 'insurance'
+    ]
+  },
+  
+  'Education': {
+    keywords: [
+      'university', 'college', 'school', 'institute', 'academy',
+      'coursera', 'udemy', 'khan', 'edx',
+      'education', 'learning', 'course', 'study', 'academic'
+    ],
+    tldPatterns: ['.edu', '.ac.uk', '.edu.au']
+  },
+  
+  'Healthcare': {
+    keywords: [
+      'mayo', 'cleveland clinic', 'kaiser',
+      'webmd', 'healthline', 'nih', 'cdc', 'who',
+      'health', 'medical', 'hospital', 'clinic', 'doctor',
+      'pharma', 'medicine', 'patient', 'care'
+    ]
+  },
+  
+  'Government': {
+    keywords: ['government', 'state', 'federal', 'senate', 'congress'],
+    tldPatterns: ['.gov', '.gov.uk', '.gov.au']
+  },
+  
+  'Travel & Hospitality': {
+    keywords: [
+      'booking', 'expedia', 'airbnb', 'tripadvisor', 'hotels',
+      'travel', 'flight', 'hotel', 'vacation', 'trip', 'airline'
+    ]
+  },
+  
+  'Food & Beverage': {
+    keywords: [
+      'ubereats', 'doordash', 'grubhub', 'deliveroo',
+      'mcdonalds', 'starbucks', 'dominos',
+      'restaurant', 'food', 'delivery', 'menu', 'recipe'
+    ]
+  },
+  
+  'Gaming': {
+    keywords: [
+      'steam', 'epic games', 'playstation', 'xbox', 'nintendo',
+      'game', 'gaming', 'esports', 'gamer'
+    ]
+  }
+};
+
+/**
+ * Classify a domain into a sector
+ * @param {string} domain - Domain name (e.g., 'example.com')
+ * @returns {string} Sector name or 'General'
+ */
+function classifySector(domain) {
+  const domainLower = domain.toLowerCase().replace('www.', '');
+  
+  // Check TLD patterns first (most specific)
+  for (const [sector, rules] of Object.entries(SECTOR_RULES)) {
+    if (rules.tldPatterns) {
+      for (const pattern of rules.tldPatterns) {
+        if (domainLower.endsWith(pattern)) {
+          return sector;
+        }
+      }
+    }
+  }
+  
+  // Score each sector based on keyword matches
+  const sectorScores = {};
+  
+  for (const [sector, rules] of Object.entries(SECTOR_RULES)) {
+    let score = 0;
+    
+    for (const keyword of rules.keywords) {
+      if (domainLower.includes(keyword)) {
+        // Longer keywords get more weight (more specific)
+        const weight = keyword.split(' ').length;
+        score += weight;
+      }
+    }
+    
+    if (score > 0) {
+      sectorScores[sector] = score;
+    }
+  }
+  
+  // Return sector with highest score
+  if (Object.keys(sectorScores).length > 0) {
+    return Object.entries(sectorScores)
+      .sort(([,a], [,b]) => b - a)[0][0];
+  }
+  
+  return 'General';
+}
+
+// Export for use in scan.js
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { classifySector, SECTOR_RULES };
+}
+
+// Example usage:
+/*
+console.log(classifySector('github.com'));        // "Technology & Software"
+console.log(classifySector('amazon.com'));        // "E-commerce & Retail"
+console.log(classifySector('cnn.com'));           // "Media & Entertainment"
+console.log(classifySector('chase.com'));         // "Financial Services"
+console.log(classifySector('harvard.edu'));       // "Education"
+console.log(classifySector('example.gov'));       // "Government"
+console.log(classifySector('booking.com'));       // "Travel & Hospitality"
+console.log(classifySector('random-site.com'));   // "General"
+*/
 
     // ========================================================================
     // CALCULATE 11 COMPONENT SCORES (unchanged from original)
