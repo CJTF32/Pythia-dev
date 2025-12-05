@@ -183,7 +183,89 @@ const USE_LIGHTHOUSE = true;
           metrics.lighthouseScore = Math.round(lhr.categories.performance.score * 100);
         }
         
-        console.log('Lighthouse metrics extracted:', metrics);
+        // 🔥 NEW: Extract detailed opportunities and diagnostics
+        metrics.opportunities = [];
+        metrics.diagnostics = [];
+        
+        // Performance opportunities (things that can save time/bytes)
+        const opportunityAudits = [
+          'render-blocking-resources',
+          'unused-css-rules',
+          'unused-javascript',
+          'uses-optimized-images',
+          'modern-image-formats',
+          'uses-text-compression',
+          'uses-responsive-images',
+          'offscreen-images',
+          'unminified-css',
+          'unminified-javascript',
+          'efficient-animated-content',
+          'duplicated-javascript',
+          'legacy-javascript',
+          'uses-long-cache-ttl',
+          'total-byte-weight',
+          'uses-rel-preconnect',
+          'server-response-time',
+          'redirects',
+          'uses-rel-preload',
+          'font-display',
+          'third-party-facades'
+        ];
+        
+        // Diagnostic audits (warnings and issues)
+        const diagnosticAudits = [
+          'mainthread-work-breakdown',
+          'bootup-time',
+          'uses-passive-event-listeners',
+          'no-document-write',
+          'long-tasks',
+          'non-composited-animations',
+          'unsized-images',
+          'preload-lcp-image',
+          'valid-source-maps',
+          'inspector-issues'
+        ];
+        
+        // Extract opportunities with savings estimates
+        for (const auditId of opportunityAudits) {
+          const audit = audits[auditId];
+          if (audit && audit.score !== null && audit.score < 1) {
+            metrics.opportunities.push({
+              id: auditId,
+              title: audit.title,
+              description: audit.description,
+              score: audit.score,
+              displayValue: audit.displayValue || '',
+              numericValue: audit.numericValue || 0,
+              numericUnit: audit.numericUnit || '',
+              details: audit.details?.items || []
+            });
+          }
+        }
+        
+        // Extract diagnostics
+        for (const auditId of diagnosticAudits) {
+          const audit = audits[auditId];
+          if (audit && audit.score !== null && audit.score < 1) {
+            metrics.diagnostics.push({
+              id: auditId,
+              title: audit.title,
+              description: audit.description,
+              score: audit.score,
+              displayValue: audit.displayValue || '',
+              details: audit.details?.items || []
+            });
+          }
+        }
+        
+        // Sort opportunities by potential savings (numeric value)
+        metrics.opportunities.sort((a, b) => (b.numericValue || 0) - (a.numericValue || 0));
+        
+        console.log('Lighthouse metrics extracted:', {
+          scores: { lcp: metrics.lcp_ms, tbt: metrics.tbt_ms },
+          opportunities: metrics.opportunities.length,
+          diagnostics: metrics.diagnostics.length
+        });
         
         return metrics;
         
