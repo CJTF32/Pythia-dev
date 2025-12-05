@@ -778,7 +778,14 @@
           }
           throw new Error(data.error);
         }
-        
+
+        if (data.error.includes('Failed to fetch') || data.error === 'TIMEOUT') {
+    resultsDiv.innerHTML = '<p class="text-red-600 text-sm">⚠️ Unable to reach this website. Check the URL is correct.</p>';
+    return;
+  }
+  throw new Error(data.error);
+}
+      
         currentScanData = { ...data, url };
         displayResults(data, url);
         statusMessage.innerHTML = '';
