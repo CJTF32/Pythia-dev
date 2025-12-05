@@ -213,7 +213,8 @@ export async function onRequestPost(context) {
       if (error.name === 'TimeoutError') {
         return new Response(JSON.stringify({ error: 'TIMEOUT', message: 'Site took too long to respond' }), { status: 504, headers: { 'Content-Type': 'application/json' } });
       }
-      throw error;
+      // Catch all other fetch errors (bad URLs, DNS failures, etc.)
+      return new Response(JSON.stringify({ error: 'Failed to fetch', message: error.message }), { status: 502, headers: { 'Content-Type': 'application/json' } });
     }
 
     const responseHeaders = response.headers;
