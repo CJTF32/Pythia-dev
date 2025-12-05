@@ -1,8 +1,8 @@
 // ============================================================================
-// PYTHIA RATING ENGINE V2.0 - PHASE 3: LIGHTHOUSE FALLBACK
+// PYTHIA RATING ENGINE V2.0 - PHASE 3: LIGHTHOUSE VIA PAGESPEED INSIGHTS
 // ============================================================================
-// Adds WebPageTest/Lighthouse as fallback for sites without CrUX data
-// Result: 100% coverage - every site gets real metrics from either CrUX or Lighthouse
+// Uses FREE PageSpeed Insights API to get Lighthouse data for 100% coverage
+// No API key required! (or use free key with generous limits)
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -20,10 +20,9 @@ export async function onRequestPost(context) {
     const CRUX_API_KEY = 'AIzaSyCxhwaXKjHZ0cGhF5V_klxfvpCXAeYpj94';
     const CRUX_API_URL = 'https://chromeuxreport.googleapis.com/v1/records:queryRecord';
     
-    // WebPageTest API - Get your FREE key at: https://builder.webpagetest.org
-    const WPT_API_KEY = 'YOUR_WPT_KEY_HERE';  // REPLACE THIS
-    const WPT_API_URL = 'https://www.webpagetest.org/runtest.php';
-    const USE_LIGHTHOUSE = true;  // Set to false to skip Lighthouse (faster but less accurate)
+    // PageSpeed Insights API - FREE!
+    const PSI_API_URL = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed';
+    const USE_LIGHTHOUSE = true;  // Set to false to disable (faster but less accurate)
 
     // ========================================================================
     // FETCH CRUX DATA
@@ -85,98 +84,92 @@ export async function onRequestPost(context) {
     }
 
     // ========================================================================
-    // FETCH LIGHTHOUSE DATA (NEW IN PHASE 3)
+    // FETCH LIGHTHOUSE DATA VIA PAGESPEED INSIGHTS (NEW - FREE!)
     // ========================================================================
     async function fetchLighthouseData(siteUrl) {
       if (!USE_LIGHTHOUSE) {
         return { hasData: false, reason: 'disabled' };
       }
 
-      if (WPT_API_KEY === 'YOUR_WPT_KEY_HERE') {
-        console.log('WebPageTest API key not configured');
-        return { hasData: false, reason: 'no_api_key' };
-      }
-
       try {
-        // Start WebPageTest run with Lighthouse
-        const runUrl = `${WPT_API_URL}?url=${encodeURIComponent(siteUrl)}&k=${WPT_API_KEY}&f=json&runs=1&location=Dulles:Chrome&lighthouse=1`;
+        // Call PageSpeed Insights API (FREE - no key needed for basic usage)
+        const psiUrl = `${PSI_API_URL}?url=${encodeURIComponent(siteUrl)}&strategy=desktop&category=PERFORMANCE`;
         
-        const runResponse = await fetch(runUrl);
-        const runData = await runResponse.json();
+        const response = await fetch(psiUrl, {
+          signal: AbortSignal.timeout(30000) // 30 second timeout
+        });
         
-        if (runData.statusCode !== 200 || !runData.data?.jsonUrl) {
-          console.log('WebPageTest start failed:', runData);
-          return { hasData: false, reason: 'start_failed' };
+        if (!response.ok) {
+          console.log('PSI API error:', response.status);
+          return { hasData: false, reason: 'api_error' };
         }
         
-        const jsonUrl = runData.data.jsonUrl;
-        const testId = runData.data.testId;
+        const data = await response.json();
         
-        // Poll for results (max 12 attempts = 60 seconds)
-        for (let i = 0; i < 12; i++) {
-          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5s
-          
-          const resultResponse = await fetch(jsonUrl);
-          const resultData = await resultResponse.json();
-          
-          if (resultData.statusCode === 200 && resultData.data?.median?.firstView) {
-            const firstView = resultData.data.median.firstView;
-            
-            // Extract metrics
-            const metrics = {
-              hasData: true,
-              lcp_ms: null,
-              inp_ms: null,
-              cls: null,
-              tbt_ms: null,
-              tti_ms: null,
-              lighthouseScore: null,
-              testUrl: `https://www.webpagetest.org/result/${testId}/`,
-              testId: testId
-            };
-            
-            // LCP
-            if (firstView.chromeUserTiming?.LargestContentfulPaint) {
-              metrics.lcp_ms = parseFloat(firstView.chromeUserTiming.LargestContentfulPaint);
-            } else if (firstView.largestContentfulPaint) {
-              metrics.lcp_ms = parseFloat(firstView.largestContentfulPaint);
-            }
-            
-            // INP (may not always be available in lab)
-            if (firstView['chromeUserTiming.InteractionToNextPaint']) {
-              metrics.inp_ms = parseFloat(firstView['chromeUserTiming.InteractionToNextPaint']);
-            }
-            
-            // CLS
-            if (firstView.chromeUserTiming?.CumulativeLayoutShift) {
-              metrics.cls = parseFloat(firstView.chromeUserTiming.CumulativeLayoutShift);
-            }
-            
-            // TBT (Total Blocking Time)
-            if (firstView.TotalBlockingTime) {
-              metrics.tbt_ms = parseFloat(firstView.TotalBlockingTime);
-            }
-            
-            // TTI (Time to Interactive)
-            if (firstView.TTIMeasurementEnd) {
-              metrics.tti_ms = parseFloat(firstView.TTIMeasurementEnd);
-            }
-            
-            // Lighthouse Performance Score
-            if (firstView.lighthouse?.Performance) {
-              metrics.lighthouseScore = Math.round(firstView.lighthouse.Performance * 100);
-            }
-            
-            return metrics;
-          }
+        if (!data.lighthouseResult) {
+          return { hasData: false, reason: 'no_lighthouse_data' };
         }
         
-        // Timeout after 60 seconds
-        console.log('WebPageTest timeout');
-        return { hasData: false, reason: 'timeout' };
+        const lhr = data.lighthouseResult;
+        const audits = lhr.audits;
+        
+        // Extract metrics
+        const metrics = {
+          hasData: true,
+          lcp_ms: null,
+          inp_ms: null,
+          cls: null,
+          tbt_ms: null,
+          tti_ms: null,
+          fcp_ms: null,
+          si_ms: null,
+          lighthouseScore: null
+        };
+        
+        // Largest Contentful Paint
+        if (audits['largest-contentful-paint']?.numericValue) {
+          metrics.lcp_ms = Math.round(audits['largest-contentful-paint'].numericValue);
+        }
+        
+        // Interaction to Next Paint (may not always be available in lab)
+        if (audits['interaction-to-next-paint']?.numericValue) {
+          metrics.inp_ms = Math.round(audits['interaction-to-next-paint'].numericValue);
+        }
+        
+        // Cumulative Layout Shift
+        if (audits['cumulative-layout-shift']?.numericValue !== undefined) {
+          metrics.cls = parseFloat(audits['cumulative-layout-shift'].numericValue.toFixed(3));
+        }
+        
+        // Total Blocking Time
+        if (audits['total-blocking-time']?.numericValue) {
+          metrics.tbt_ms = Math.round(audits['total-blocking-time'].numericValue);
+        }
+        
+        // Time to Interactive
+        if (audits['interactive']?.numericValue) {
+          metrics.tti_ms = Math.round(audits['interactive'].numericValue);
+        }
+        
+        // First Contentful Paint
+        if (audits['first-contentful-paint']?.numericValue) {
+          metrics.fcp_ms = Math.round(audits['first-contentful-paint'].numericValue);
+        }
+        
+        // Speed Index
+        if (audits['speed-index']?.numericValue) {
+          metrics.si_ms = Math.round(audits['speed-index'].numericValue);
+        }
+        
+        // Lighthouse Performance Score
+        if (lhr.categories?.performance?.score !== undefined) {
+          metrics.lighthouseScore = Math.round(lhr.categories.performance.score * 100);
+        }
+        
+        return metrics;
         
       } catch (error) {
-        console.error('Lighthouse fetch error:', error);
+        console.error('PageSpeed Insights error:', error);
         return { hasData: false, reason: 'error', error: error.message };
       }
     }
@@ -192,8 +185,6 @@ export async function onRequestPost(context) {
       'CC': { pscore: 60.0, speed: 45.0, mobile: 38.0, seo: 45.0, responsiveness: 45.0, accessibility: 40.0, privacy: 35.0, delivery: 35.0, sustainability: 25.0 },
       'C': { pscore: 0.0, speed: 30.0, mobile: 25.0, seo: 30.0, responsiveness: 30.0, accessibility: 30.0, privacy: 25.0, delivery: 25.0, sustainability: 15.0 }
     };
-
-    const RATING_THRESHOLDS = { AAA: 95.0, AA: 90.0, A: 85.0, BBB: 80.0, BB: 75.0, B: 70.0, CCC: 65.0, CC: 60.0, C: 0.0 };
 
     const SECTOR_RULES = {
       'Technology & Software': { keywords: ['facebook', 'instagram', 'twitter', 'linkedin', 'github', 'google', 'microsoft', 'apple', 'amazon', 'software', 'saas'], tldPatterns: ['.io', '.dev', '.app'] },
@@ -300,7 +291,7 @@ export async function onRequestPost(context) {
     const sector = classifySector(domain);
     const result = {};
 
-    // Calculate all 8 lab scores (same as Phase 2)
+    // Calculate all 8 lab scores
     const speedScore = smoothScore(loadTime, [[0, 100], [100, 97], [200, 94], [300, 91], [400, 88], [500, 85], [600, 82], [800, 76], [1000, 70], [1500, 58], [2000, 46], [3000, 30], [5000, 15], [10000, 0]]);
     result.speed = Math.round(speedScore * 10) / 10;
 
@@ -396,7 +387,7 @@ export async function onRequestPost(context) {
     result.crux = cruxData;
 
     // ========================================================================
-    // PHASE 3: Fetch Lighthouse data if no CrUX
+    // PHASE 3: Fetch Lighthouse data if no CrUX (via PageSpeed Insights)
     // ========================================================================
     let lighthouseData = { hasData: false };
     
@@ -461,7 +452,7 @@ export async function onRequestPost(context) {
 
     result._meta = {
       scannedAt: new Date().toISOString(),
-      version: '2.0-phase3',
+      version: '2.0-phase3-psi',
       loadTimeMs: rawLoadTime,
       pageSizeMB: Math.round(sizeMB * 100) / 100,
       resourceCount: analysis.resourceCount,
