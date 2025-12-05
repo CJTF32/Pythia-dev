@@ -34,10 +34,10 @@ export async function onRequestPost(context) {
     // ========================================================================
     // FETCH CRUX DATA FUNCTION
     // ========================================================================
-    async function fetchCruxData(targetUrl) {
+    async function fetchCruxData(urlToFetch) {
       try {
         // Normalize URL to origin only
-        const urlObj = new URL(targetUrl);
+        const urlObj = new URL(urlToFetch);
         const origin = `${urlObj.protocol}//${urlObj.hostname}`;
 
         // Validate origin format
