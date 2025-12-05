@@ -36,6 +36,37 @@
     .modal.show { display: flex; }
     @keyframes countUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     .count-up { animation: countUp 0.5s ease-out; }
+    .metric-tooltip {
+    position: relative;
+    cursor: help;
+    border-bottom: 1px dotted #6b7280;
+  }
+  .metric-tooltip:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1f2937;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 5px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .metric-tooltip:hover::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #1f2937;
+    margin-bottom: -5px;
+  }
   </style>
 </head>
 <body class="bg-gray-50">
@@ -766,6 +797,20 @@ async function scanWebsite() {
     });
     
     const data = await response.json();
+
+    const data = await response.json();
+
+// Debug logging
+console.log('Scan result:', {
+  dataSource: data._meta?.dataSource,
+  hasCrux: data.crux?.hasData,
+  hasLighthouse: data.lighthouse?.hasData,
+  pscore: data.pscore,
+  rating: data.rating
+});
+
+if (data.error) {
+  // ... existing error handling
     
     if (data.error) {
       // Handle blocked scans (403/429 errors)
@@ -997,39 +1042,122 @@ async function scanTechCompetitor() {
     }
     
     function displayResults(data, url) {
-      document.getElementById('scannedUrl').textContent = url;
-      document.getElementById('pscoreValue').textContent = data.pscore;
-      document.getElementById('ratingValue').textContent = data.rating;
-      document.getElementById('ratingValue').className = 'credit-rating mb-4 ' + getRatingColor(data.rating);
-
-      // ADD CRUX DATA DISPLAY
+  document.getElementById('scannedUrl').textContent = url;
+  document.getElementById('pscoreValue').textContent = data.pscore;
+  document.getElementById('ratingValue').textContent = data.rating;
+  document.getElementById('ratingValue').className = 'credit-rating mb-4 ' + getRatingColor(data.rating);
+  
+  // PHASE 3: Enhanced data source display
   const resultsSection = document.getElementById('results');
-  const existingBadge = resultsSection.querySelector('.crux-badge');
+  const existingBadge = resultsSection.querySelector('.data-source-badge');
   if (existingBadge) existingBadge.remove();
   
   if (data.crux?.hasData) {
+    // Real Chrome user data
     resultsSection.insertAdjacentHTML('afterbegin', 
-      `<div class="crux-badge bg-green-50 border-2 border-green-500 rounded-lg p-4 mb-6">
-        <div class="flex items-center gap-2 mb-2">
+      `<div class="data-source-badge bg-green-50 border-2 border-green-500 rounded-lg p-4 mb-6">
+        <div class="flex items-center gap-2 mb-3">
           <span class="text-2xl">✓</span>
-          <strong class="text-green-800">Verified with Real Chrome User Data</strong>
+          <strong class="text-green-800 text-lg">Verified with Real Chrome User Data</strong>
         </div>
-        <div class="grid grid-cols-3 gap-4 text-sm text-gray-700">
-          <div><strong>Real LCP:</strong> ${data.crux.lcp_p75_ms}ms</div>
-          <div><strong>Real INP:</strong> ${data.crux.inp_p75_ms}ms</div>
-          <div><strong>Real CLS:</strong> ${data.crux.cls_p75}</div>
+        <div class="grid grid-cols-3 gap-4 text-sm">
+          <div class="bg-white p-3 rounded border border-green-200">
+            <div class="text-gray-600 text-xs mb-1">Real LCP (Loading)</div>
+            <div class="font-bold text-lg">${data.crux.lcp_p75_ms}ms</div>
+            <div class="text-xs text-gray-500">${data.crux.lcp_p75_ms <= 2500 ? '🟢 Good' : data.crux.lcp_p75_ms <= 4000 ? '🟡 Needs work' : '🔴 Poor'}</div>
+          </div>
+          <div class="bg-white p-3 rounded border border-green-200">
+            <div class="text-gray-600 text-xs mb-1">Real INP (Responsiveness)</div>
+            <div class="font-bold text-lg">${data.crux.inp_p75_ms}ms</div>
+            <div class="text-xs text-gray-500">${data.crux.inp_p75_ms <= 200 ? '🟢 Good' : data.crux.inp_p75_ms <= 500 ? '🟡 Needs work' : '🔴 Poor'}</div>
+          </div>
+          <div class="bg-white p-3 rounded border border-green-200">
+            <div class="text-gray-600 text-xs mb-1">Real CLS (Visual Stability)</div>
+            <div class="font-bold text-lg">${data.crux.cls_p75.toFixed(3)}</div>
+            <div class="text-xs text-gray-500">${data.crux.cls_p75 <= 0.1 ? '🟢 Good' : data.crux.cls_p75 <= 0.25 ? '🟡 Needs work' : '🔴 Poor'}</div>
+          </div>
         </div>
-        <div class="text-xs text-gray-500 mt-2">From ${data.crux.formFactor} Chrome users</div>
+        <div class="text-xs text-gray-600 mt-3">
+          📊 From millions of ${data.crux.formFactor} Chrome users over the past 28 days
+        </div>
+      </div>`
+    );
+  } else if (data.lighthouse?.hasData) {
+    // Lighthouse lab data
+    resultsSection.insertAdjacentHTML('afterbegin',
+      `<div class="data-source-badge bg-blue-50 border-2 border-blue-500 rounded-lg p-4 mb-6">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">🔬</span>
+            <strong class="text-blue-800 text-lg">Full Browser Lab Audit</strong>
+          </div>
+          ${data.lighthouse.lighthouseScore ? `<div class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-xl">${data.lighthouse.lighthouseScore}/100</div>` : ''}
+        </div>
+        
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm mb-3">
+          ${data.lighthouse.lcp_ms ? `
+          <div class="bg-white p-3 rounded border border-blue-200">
+            <div class="text-gray-600 text-xs mb-1">LCP (Loading)</div>
+            <div class="font-bold text-lg">${Math.round(data.lighthouse.lcp_ms)}ms</div>
+            <div class="text-xs text-gray-500">${data.lighthouse.lcp_ms <= 2500 ? '🟢 Good' : data.lighthouse.lcp_ms <= 4000 ? '🟡 OK' : '🔴 Poor'}</div>
+          </div>` : ''}
+          
+          ${data.lighthouse.inp_ms ? `
+          <div class="bg-white p-3 rounded border border-blue-200">
+            <div class="text-gray-600 text-xs mb-1">INP (Interactive)</div>
+            <div class="font-bold text-lg">${Math.round(data.lighthouse.inp_ms)}ms</div>
+            <div class="text-xs text-gray-500">${data.lighthouse.inp_ms <= 200 ? '🟢 Good' : data.lighthouse.inp_ms <= 500 ? '🟡 OK' : '🔴 Poor'}</div>
+          </div>` : ''}
+          
+          ${data.lighthouse.cls ? `
+          <div class="bg-white p-3 rounded border border-blue-200">
+            <div class="text-gray-600 text-xs mb-1">CLS (Visual)</div>
+            <div class="font-bold text-lg">${data.lighthouse.cls.toFixed(3)}</div>
+            <div class="text-xs text-gray-500">${data.lighthouse.cls <= 0.1 ? '🟢 Good' : data.lighthouse.cls <= 0.25 ? '🟡 OK' : '🔴 Poor'}</div>
+          </div>` : ''}
+          
+          ${data.lighthouse.tbt_ms ? `
+          <div class="bg-white p-3 rounded border border-blue-200">
+            <div class="text-gray-600 text-xs mb-1">TBT (Blocking)</div>
+            <div class="font-bold text-lg">${Math.round(data.lighthouse.tbt_ms)}ms</div>
+            <div class="text-xs text-gray-500">${data.lighthouse.tbt_ms <= 300 ? '🟢 Good' : data.lighthouse.tbt_ms <= 600 ? '🟡 OK' : '🔴 Poor'}</div>
+          </div>` : ''}
+          
+          ${data.lighthouse.tti_ms ? `
+          <div class="bg-white p-3 rounded border border-blue-200">
+            <div class="text-gray-600 text-xs mb-1">TTI (Interactive)</div>
+            <div class="font-bold text-lg">${(data.lighthouse.tti_ms / 1000).toFixed(1)}s</div>
+            <div class="text-xs text-gray-500">${data.lighthouse.tti_ms <= 3800 ? '🟢 Good' : data.lighthouse.tti_ms <= 7300 ? '🟡 OK' : '🔴 Poor'}</div>
+          </div>` : ''}
+        </div>
+        
+        <div class="flex items-center justify-between text-xs text-gray-600">
+          <span>🔬 Lab test with full Chrome browser simulation</span>
+          ${data.lighthouse.testUrl ? `<a href="${data.lighthouse.testUrl}" target="_blank" class="text-blue-600 hover:text-blue-800 font-semibold underline">View Full WebPageTest Report →</a>` : ''}
+        </div>
       </div>`
     );
   } else {
+    // Lab estimates only
     resultsSection.insertAdjacentHTML('afterbegin',
-      `<div class="crux-badge bg-gray-50 border border-gray-300 rounded-lg p-3 mb-4 text-sm text-gray-600">
-        ℹ️ Estimated from lab scan (no real-user data available for this site)
+      `<div class="data-source-badge bg-gray-50 border border-gray-300 rounded-lg p-3 mb-4">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">ℹ️</span>
+          <span class="text-sm text-gray-700">
+            <strong>Lab estimates only</strong> - No real-user or browser test data available for this site
+          </span>
+        </div>
       </div>`
     );
   }
   
+  displayOpportunityLoss(data);
+  displayTechShortfall(data);
+  generateFixRecommendations(data);
+  
+  document.getElementById('results').classList.remove('hidden');
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
       
       displayOpportunityLoss(data);
       displayTechShortfall(data);
