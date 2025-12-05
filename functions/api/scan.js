@@ -126,6 +126,19 @@ export async function onRequestPost(context) {
       targetUrl = 'https://' + targetUrl;
     }
 
+    // Validate URL before fetching
+try {
+  new URL(targetUrl);
+} catch (e) {
+  return new Response(JSON.stringify({ 
+    error: 'INVALID_URL', 
+    message: 'Invalid URL format' 
+  }), {
+    status: 400,
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+    
     const startTime = Date.now();
     let response, html;
 
