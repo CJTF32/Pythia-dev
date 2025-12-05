@@ -769,29 +769,29 @@
       }
     }
 
-asynasync function scanWebsite() {
-  const urlInput = document.getElementById('urlInput');
-  const scanBtn = document.getElementById('scanBtn');
-  const statusMessage = document.getElementById('statusMessage');
-  const results = document.getElementById('results');
-  
-  const url = urlInput.value.trim();
-  
-  if (!url) {
-    statusMessage.innerHTML = '<p class="text-red-600">Please enter a URL</p>';
-    return;
-  }
-  
-  scanBtn.disabled = true;
-  scanBtn.textContent = 'Scanning...';
-  statusMessage.innerHTML = '<p class="text-indigo-600 animate-pulse">Analyzing website performance...</p>';
-  results.classList.add('hidden');
-  comparisonScans = [];
-  techComparisonScans = [];
-  
-  try {
-    const response = await fetch('/api/scan', {
-      method: 'POST',
+    async function scanWebsite() {
+      const urlInput = document.getElementById('urlInput');
+      const scanBtn = document.getElementById('scanBtn');
+      const statusMessage = document.getElementById('statusMessage');
+      const results = document.getElementById('results');
+      
+      const url = urlInput.value.trim();
+      
+      if (!url) {
+        statusMessage.innerHTML = '<p class="text-red-600">Please enter a URL</p>';
+        return;
+      }
+      
+      scanBtn.disabled = true;
+      scanBtn.textContent = 'Scanning...';
+      statusMessage.innerHTML = '<p class="text-indigo-600 animate-pulse">Analyzing website performance...</p>';
+      results.classList.add('hidden');
+      comparisonScans = [];
+      techComparisonScans = [];
+      
+      try {
+        const response = await fetch('/api/scan', {
+          method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url })
     });
