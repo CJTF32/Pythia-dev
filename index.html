@@ -695,9 +695,28 @@
     `;
     return;
   }
+  // Calculate revenue impact using Lighthouse/CrUX LCP
+  let loadTime;
+  let dataSource;
   
-  // Calculate revenue impact
-  const loadTime = currentScanData._meta?.loadTimeMs || 1000;
+  // Priority 1: CrUX LCP (real user data)
+  if (currentScanData.crux?.hasData && currentScanData.crux.lcp_p75_ms) {
+    loadTime = currentScanData.crux.lcp_p75_ms;
+    dataSource = 'Real user data (CrUX)';
+  }
+  // Priority 2: Lighthouse LCP (lab measurement)
+  else if (currentScanData.lighthouse?.hasData && currentScanData.lighthouse.lcp_ms) {
+    loadTime = currentScanData.lighthouse.lcp_ms;
+    dataSource = 'Lab measurement (Lighthouse)';
+  }
+  // Priority 3: Fallback to basic load time
+  else {
+    loadTime = currentScanData._meta?.loadTimeMs || 1000;
+    dataSource = 'Basic load time';
+  }
+  
+  console.log(`📊 Amazon calculator using: ${dataSource} = ${loadTime}ms`);
+  
   const baselineTime = 500; // Amazon's baseline
   const delayMs = Math.max(0, loadTime - baselineTime);
   const delay100ms = delayMs / 100;
@@ -748,10 +767,22 @@
         return;
       }
       
-      const loadTime = currentScanData._meta?.loadTimeMs || 1000;
-      const baselineTime = 500;
-      const delayMs = Math.max(0, loadTime - baselineTime);
-      const delay100ms = delayMs / 100;
+      // Use Lighthouse/CrUX LCP (same logic as showAmazonCalculator)
+  let loadTime;
+  
+  if (currentScanData.crux?.hasData && currentScanData.crux.lcp_p75_ms) {
+    loadTime = currentScanData.crux.lcp_p75_ms;
+  }
+  else if (currentScanData.lighthouse?.hasData && currentScanData.lighthouse.lcp_ms) {
+    loadTime = currentScanData.lighthouse.lcp_ms;
+  }
+  else {
+    loadTime = currentScanData._meta?.loadTimeMs || 1000;
+  }
+  
+  const baselineTime = 500;
+  const delayMs = Math.max(0, loadTime - baselineTime);
+  const delay100ms = delayMs / 100;
       
       const ecomRevenue = arr * (ecomPercent / 100);
       const lossPercent = delay100ms * 1;
