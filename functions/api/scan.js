@@ -127,17 +127,17 @@ export async function onRequestPost(context) {
     }
 
     // Validate URL before fetching
-try {
-  new URL(targetUrl);
-} catch (e) {
-  return new Response(JSON.stringify({ 
-    error: 'INVALID_URL', 
-    message: 'Invalid URL format' 
-  }), {
-    status: 400,
-    headers: { 'Content-Type': 'application/json' }
-  });
-}
+    try {
+      new URL(targetUrl);
+    } catch (e) {
+      return new Response(JSON.stringify({ 
+        error: 'INVALID_URL', 
+        message: 'Invalid URL format' 
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     
     const startTime = Date.now();
     let response, html;
@@ -150,17 +150,62 @@ try {
       
       if (!response.ok) {
         if (response.status === 403 || response.status === 429) {
-          return new Response(JSON.stringify({ error: 'BLOCKED_SCAN', message: 'Site blocks automated scans' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+          return new Response(JSON.stringify({ 
+            error: 'BLOCKED_SCAN', 
+            message: 'Site blocks automated scans' 
+          }), { 
+            status: 403, 
+            headers: { 'Content-Type': 'application/json' } 
+          });
         }
-        return new Response(JSON.stringify({ error: 'Failed to fetch', message: 'Site unreachable' }), { status: 502, headers: { 'Content-Type': 'application/json' } });
+        
+        // Handle non-existent sites (404, 500, etc.)
+        return new Response(JSON.stringify({ 
+          error: 'SITE_NOT_FOUND', 
+          message: `Site returned status ${response.status}` 
+        }), { 
+          status: 502, 
+          headers: { 'Content-Type': 'application/json' } 
+        });
       }
       
       html = await response.text();
+      
     } catch (error) {
+      // Better error detection
       if (error.name === 'TimeoutError') {
-        return new Response(JSON.stringify({ error: 'TIMEOUT', message: 'Site took too long' }), { status: 504, headers: { 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ 
+          error: 'TIMEOUT', 
+          message: 'Site took too long to respond' 
+        }), { 
+          status: 504, 
+          headers: { 'Content-Type': 'application/json' } 
+        });
       }
-      return new Response(JSON.stringify({ error: 'Failed to fetch', message: error.message }), { status: 502, headers: { 'Content-Type': 'application/json' } });
+      
+      // DNS/connection errors indicate non-existent site
+      if (error.message.includes('getaddrinfo') || 
+          error.message.includes('ENOTFOUND') || 
+          error.message.includes('DNS') ||
+          error.message.includes('network') ||
+          error.message.includes('fetch failed')) {
+        return new Response(JSON.stringify({ 
+          error: 'SITE_NOT_FOUND', 
+          message: 'Could not connect to site - it may not exist' 
+        }), { 
+          status: 502, 
+          headers: { 'Content-Type': 'application/json' } 
+        });
+      }
+      
+      // Generic connection failure
+      return new Response(JSON.stringify({ 
+        error: 'CONNECTION_FAILED', 
+        message: error.message || 'Failed to reach site' 
+      }), { 
+        status: 502, 
+        headers: { 'Content-Type': 'application/json' } 
+      });
     }
 
     const rawLoadTime = Date.now() - startTime;
@@ -365,7 +410,8 @@ try {
 
   } catch (error) {
     return new Response(JSON.stringify({ 
-      error: error.message 
+      error: 'SERVER_ERROR',
+      message: error.message 
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
