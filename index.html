@@ -983,18 +983,15 @@
         (shortfall > 20 ? 'text-red-600' : shortfall > 10 ? 'text-orange-600' : 'text-green-600');
       
       const components = [
-        { name: 'Speed', score: data.speed },
-        { name: 'Mobile', score: data.mobile },
-        { name: 'SEO', score: data.seo },
-        { name: 'Interactivity', score: data.interactivity },
-        { name: 'Accessibility', score: data.accessibility },
-        { name: 'Privacy', score: data.privacy },
-        { name: 'CDN', score: data.cdn },
-        { name: 'Page Weight', score: data.pageWeight },
-        { name: 'Modern Standards', score: data.modernStandards },
-        { name: 'Code Quality', score: data.codeQuality },
-        { name: 'Sustainability', score: data.sustainability }
-      ].sort((a, b) => a.score - b.score);
+  { name: 'Speed', score: data.speed || 0 },
+  { name: 'Mobile', score: data.mobile || 0 },
+  { name: 'SEO', score: data.seo || 0 },
+  { name: 'Responsiveness', score: data.responsiveness || 0 },
+  { name: 'Accessibility', score: data.accessibility || 0 },
+  { name: 'Privacy', score: data.privacy || 0 },
+  { name: 'Delivery', score: data.delivery || 0 },
+  { name: 'Sustainability', score: data.sustainability || 0 }
+].sort((a, b) => a.score - b.score);
       
       document.getElementById('indexBreakdown').innerHTML = components.map(comp => {
         const gap = 100 - comp.score;
@@ -1011,18 +1008,15 @@
     
     function generateFixRecommendations(data) {
       const issues = [
-        { score: data.speed, name: 'Speed', fix: 'Optimize images, enable compression, use CDN' },
-        { score: data.mobile, name: 'Mobile', fix: 'Add viewport, use responsive images, lazy loading' },
-        { score: data.seo, name: 'SEO', fix: 'Add meta descriptions, structured data' },
-        { score: data.interactivity, name: 'Interactivity', fix: 'Defer non-critical scripts' },
-        { score: data.accessibility, name: 'Accessibility', fix: 'Add alt text, ARIA labels' },
-        { score: data.privacy, name: 'Privacy', fix: 'Enable HTTPS, security headers' },
-        { score: data.cdn, name: 'CDN', fix: 'Configure CDN, cache headers' },
-        { score: data.pageWeight, name: 'Page Weight', fix: 'Compress images, remove unused code' },
-        { score: data.modernStandards, name: 'Modern Standards', fix: 'Use WebP/AVIF, lazy loading' },
-        { score: data.codeQuality, name: 'Code Quality', fix: 'Remove blocking scripts, async JS' },
-        { score: data.sustainability, name: 'Sustainability', fix: 'Reduce page weight, green hosting' }
-      ].sort((a, b) => a.score - b.score).slice(0, 5);
+  { score: data.speed || 0, name: 'Speed', fix: 'Optimize images, enable compression, use CDN' },
+  { score: data.mobile || 0, name: 'Mobile', fix: 'Add viewport, use responsive images, lazy loading' },
+  { score: data.seo || 0, name: 'SEO', fix: 'Add meta descriptions, structured data' },
+  { score: data.responsiveness || 0, name: 'Responsiveness', fix: 'Defer non-critical scripts, reduce JavaScript' },
+  { score: data.accessibility || 0, name: 'Accessibility', fix: 'Add alt text, ARIA labels' },
+  { score: data.privacy || 0, name: 'Privacy', fix: 'Enable HTTPS, security headers (CSP, HSTS)' },
+  { score: data.delivery || 0, name: 'Delivery', fix: 'Configure CDN, cache headers, compression' },
+  { score: data.sustainability || 0, name: 'Sustainability', fix: 'Reduce page weight, optimize images, green hosting' }
+].sort((a, b) => a.score - b.score).slice(0, 5);
       
       document.getElementById('fixRecommendations').innerHTML = issues.map((issue, index) => {
         const priority = index === 0 ? '🔴 Critical' : index === 1 ? '🟠 High' : '🟡 Medium';
@@ -1088,12 +1082,15 @@
       y += 10;
       
       const indices = [
-        ['Speed', data.speed], ['Mobile', data.mobile], ['SEO', data.seo],
-        ['Interactivity', data.interactivity], ['Accessibility', data.accessibility],
-        ['Privacy', data.privacy], ['CDN', data.cdn], ['Page Weight', data.pageWeight],
-        ['Modern Standards', data.modernStandards], ['Code Quality', data.codeQuality],
-        ['Sustainability', data.sustainability]
-      ];
+  ['Speed', data.speed || 0],
+  ['Mobile', data.mobile || 0],
+  ['SEO', data.seo || 0],
+  ['Responsiveness', data.responsiveness || 0],
+  ['Accessibility', data.accessibility || 0],
+  ['Privacy', data.privacy || 0],
+  ['Delivery', data.delivery || 0],
+  ['Sustainability', data.sustainability || 0]
+];
       
       doc.setFontSize(10);
       indices.forEach(([name, score]) => {
@@ -1195,20 +1192,17 @@
       doc.text(`P-Score: ${currentScanData.pscore}/100 | Rating: ${currentScanData.rating}`, 20, y);
       y += 8;
       
-      // All 11 Indices for Your Site
+      // All 8 Indices for Your Site
       const yourIndices = [
-        ['Speed', currentScanData.speed],
-        ['Mobile', currentScanData.mobile],
-        ['SEO', currentScanData.seo],
-        ['Interactivity', currentScanData.interactivity],
-        ['Accessibility', currentScanData.accessibility],
-        ['Privacy', currentScanData.privacy],
-        ['CDN', currentScanData.cdn],
-        ['Page Weight', currentScanData.pageWeight],
-        ['Modern Standards', currentScanData.modernStandards],
-        ['Code Quality', currentScanData.codeQuality],
-        ['Sustainability', currentScanData.sustainability]
-      ];
+  ['Speed', currentScanData.speed || 0],
+  ['Mobile', currentScanData.mobile || 0],
+  ['SEO', currentScanData.seo || 0],
+  ['Responsiveness', currentScanData.responsiveness || 0],
+  ['Accessibility', currentScanData.accessibility || 0],
+  ['Privacy', currentScanData.privacy || 0],
+  ['Delivery', currentScanData.delivery || 0],
+  ['Sustainability', currentScanData.sustainability || 0]
+];
       
       yourIndices.forEach(([name, score]) => {
         doc.text(`  ${name}: ${score.toFixed(1)}/100`, 25, y);
@@ -1239,23 +1233,31 @@
         doc.text(`P-Score: ${comp.pscore}/100 | Rating: ${comp.rating} | Diff: ${diffText}`, 20, y);
         y += 8;
         
-        // All 11 Indices for Competitor
+        // All 8 Indices for Competitor
         const compIndices = [
-          ['Speed', comp.speed],
-          ['Mobile', comp.mobile],
-          ['SEO', comp.seo],
-          ['Interactivity', comp.interactivity],
-          ['Accessibility', comp.accessibility],
-          ['Privacy', comp.privacy],
-          ['CDN', comp.cdn],
-          ['Page Weight', comp.pageWeight],
-          ['Modern Standards', comp.modernStandards],
-          ['Code Quality', comp.codeQuality],
-          ['Sustainability', comp.sustainability]
-        ];
+  ['Speed', comp.speed || 0],
+  ['Mobile', comp.mobile || 0],
+  ['SEO', comp.seo || 0],
+  ['Responsiveness', comp.responsiveness || 0],
+  ['Accessibility', comp.accessibility || 0],
+  ['Privacy', comp.privacy || 0],
+  ['Delivery', comp.delivery || 0],
+  ['Sustainability', comp.sustainability || 0]
+];
         
         compIndices.forEach(([name, score]) => {
-          const yourScore = currentScanData[name.toLowerCase().replace(' ', '')];
+          // Map display names to data property names
+const propertyMap = {
+  'Speed': 'speed',
+  'Mobile': 'mobile',
+  'SEO': 'seo',
+  'Responsiveness': 'responsiveness',
+  'Accessibility': 'accessibility',
+  'Privacy': 'privacy',
+  'Delivery': 'delivery',
+  'Sustainability': 'sustainability'
+};
+const yourScore = currentScanData[propertyMap[name]] || 0;
           const scoreDiff = yourScore - score;
           const diffSymbol = scoreDiff > 0 ? '+' : '';
           doc.text(`  ${name}: ${score.toFixed(1)}/100 (${diffSymbol}${scoreDiff.toFixed(1)})`, 25, y);
