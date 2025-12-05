@@ -39,6 +39,12 @@ export async function onRequestPost(context) {
         // Normalize URL to origin only
         const urlObj = new URL(targetUrl);
         const origin = `${urlObj.protocol}//${urlObj.hostname}`;
+
+        // Validate origin format
+    if (!origin.match(/^https?:\/\/[a-zA-Z0-9.-]+$/)) {
+      console.log('Invalid origin format:', origin);
+      return { hasData: false };
+    }
         
         // Try DESKTOP first (more stable for business sites)
         let response = await fetch(`${CRUX_API_URL}?key=${CRUX_API_KEY}`, {
