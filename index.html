@@ -742,89 +742,89 @@
     }
 
 async function scanWebsite() {
-4  const urlInput = document.getElementById('urlInput');
-5  const scanBtn = document.getElementById('scanBtn');
-6  const statusMessage = document.getElementById('statusMessage');
-7  const results = document.getElementById('results');
-8  
-9  const url = urlInput.value.trim();
-10  
-11  if (!url) {
-12    statusMessage.innerHTML = '<p class="text-red-600">Please enter a URL</p>';
-13    return;
-14  }
-15  
-16  scanBtn.disabled = true;
-17  scanBtn.textContent = 'Scanning...';
-18  statusMessage.innerHTML = '<p class="text-indigo-600 animate-pulse">Analyzing website performance...</p>';
-19  results.classList.add('hidden');
-20  comparisonScans = [];
-21  techComparisonScans = [];
-22  
-23  try {
-24    const response = await fetch('/api/scan', {
-25      method: 'POST',
-26      headers: { 'Content-Type': 'application/json' },
-27      body: JSON.stringify({ url })
-28    });
-29    
-30    const data = await response.json();
-31    
-32    if (data.error) {
-33      // Handle blocked scans (403/429 errors)
-34      if (data.error === 'BLOCKED_SCAN') {
-35        statusMessage.innerHTML = '';
-36        showManualScanModal(url);
-37        return;
-38      }
-39      
-40      // Handle non-existent sites (connection failures, DNS errors, 404s, etc.)
-41      if (data.error === 'SITE_NOT_FOUND' || 
-42          data.error === 'CONNECTION_FAILED' || 
-43          data.error === 'INVALID_URL' || 
-44          data.error === 'TIMEOUT') {
-45        statusMessage.innerHTML = `
-46          <div class="bg-red-50 border-2 border-red-300 rounded-lg p-6 mt-4">
-47            <p class="text-red-800 font-bold text-lg mb-2">⚠️ We don't think this site exists!</p>
-48            <p class="text-red-700 mb-3">We couldn't reach <strong>${url}</strong></p>
-49            <p class="text-gray-700 text-sm mb-3">
-50              ${data.error === 'TIMEOUT' ? 'The site took too long to respond.' : 
-51                data.error === 'INVALID_URL' ? 'The URL format is invalid.' :
-52                'The site may not exist, be temporarily down, or have connection issues.'}
-53            </p>
-54            <p class="text-red-600 text-sm">
-55              If you think we're wrong, email us at 
-56              <a href="mailto:hello@cronixholdings.com" class="underline font-semibold hover:text-red-800">
-57                hello@cronixholdings.com
-58              </a>
-59            </p>
-60          </div>
-61        `;
-62        return;
-63      }
-64      
-65      // Generic error fallback
-66      throw new Error(data.message || data.error);
-67    }
-68    
-69    currentScanData = { ...data, url };
-70    displayResults(data, url);
-71    statusMessage.innerHTML = '';
-72    
-73  } catch (error) {
-74    console.error('Scan error:', error);
-75    statusMessage.innerHTML = `
-76      <div class="bg-red-50 border-2 border-red-300 rounded-lg p-4 mt-4">
-77        <p class="text-red-800 font-bold mb-2">Error scanning site</p>
-78        <p class="text-red-700 text-sm">${error.message}</p>
-79      </div>
-80    `;
-81  } finally {
-82    scanBtn.disabled = false;
-83    scanBtn.textContent = 'Scan';
-84  }
-85}
-86
+  const urlInput = document.getElementById('urlInput');
+  const scanBtn = document.getElementById('scanBtn');
+  const statusMessage = document.getElementById('statusMessage');
+  const results = document.getElementById('results');
+  
+  const url = urlInput.value.trim();
+  
+  if (!url) {
+    statusMessage.innerHTML = '<p class="text-red-600">Please enter a URL</p>';
+    return;
+  }
+  
+  scanBtn.disabled = true;
+  scanBtn.textContent = 'Scanning...';
+  statusMessage.innerHTML = '<p class="text-indigo-600 animate-pulse">Analyzing website performance...</p>';
+  results.classList.add('hidden');
+  comparisonScans = [];
+  techComparisonScans = [];
+  
+  try {
+    const response = await fetch('/api/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    
+    const data = await response.json();
+    
+    if (data.error) {
+      // Handle blocked scans (403/429 errors)
+      if (data.error === 'BLOCKED_SCAN') {
+        statusMessage.innerHTML = '';
+        showManualScanModal(url);
+        return;
+      }
+      
+      // Handle non-existent sites (connection failures, DNS errors, 404s, etc.)
+      if (data.error === 'SITE_NOT_FOUND' || 
+          data.error === 'CONNECTION_FAILED' || 
+          data.error === 'INVALID_URL' || 
+          data.error === 'TIMEOUT') {
+        statusMessage.innerHTML = `
+          <div class="bg-red-50 border-2 border-red-300 rounded-lg p-6 mt-4">
+            <p class="text-red-800 font-bold text-lg mb-2">⚠️ We don't think this site exists!</p>
+            <p class="text-red-700 mb-3">We couldn't reach <strong>${url}</strong></p>
+            <p class="text-gray-700 text-sm mb-3">
+              ${data.error === 'TIMEOUT' ? 'The site took too long to respond.' : 
+                data.error === 'INVALID_URL' ? 'The URL format is invalid.' :
+                'The site may not exist, be temporarily down, or have connection issues.'}
+            </p>
+            <p class="text-red-600 text-sm">
+              If you think we're wrong, email us at 
+              <a href="mailto:hello@cronixholdings.com" class="underline font-semibold hover:text-red-800">
+                hello@cronixholdings.com
+              </a>
+            </p>
+          </div>
+        `;
+        return;
+      }
+      
+      // Generic error fallback
+      throw new Error(data.message || data.error);
+    }
+    
+    currentScanData = { ...data, url };
+    displayResults(data, url);
+    statusMessage.innerHTML = '';
+    
+  } catch (error) {
+    console.error('Scan error:', error);
+    statusMessage.innerHTML = `
+      <div class="bg-red-50 border-2 border-red-300 rounded-lg p-4 mt-4">
+        <p class="text-red-800 font-bold mb-2">Error scanning site</p>
+        <p class="text-red-700 text-sm">${error.message}</p>
+      </div>
+    `;
+  } finally {
+    scanBtn.disabled = false;
+    scanBtn.textContent = 'Scan';
+  }
+}
+
     
 // UPDATED COMPETITOR SCANNING FUNCTIONS
 // Replace the scanCompetitor() and scanTechCompetitor() functions in your index-65.html
