@@ -776,14 +776,20 @@
     showManualScanModal(url);
     return;
   }
-  // Check for unreachable sites
-  if (data.error.includes('Failed to fetch') || data.error === 'TIMEOUT') {
-    statusMessage.innerHTML = '<p class="text-red-600 text-sm">⚠️ Unable to reach this website. Check the URL is correct.</p>';
+  // Check for unreachable/invalid sites
+  if (data.error === 'INVALID_URL' || data.error.includes('Failed to fetch') || data.error === 'TIMEOUT') {
+    statusMessage.innerHTML = `
+      <div class="bg-red-50 border-2 border-red-300 rounded-lg p-4 mt-4">
+        <p class="text-red-800 font-bold mb-2">⚠️ We don't think this website exists!</p>
+        <p class="text-red-700 text-sm mb-3">We couldn't reach <strong>${url}</strong></p>
+        <p class="text-red-600 text-xs">If you think we're wrong, email us at <a href="mailto:hello@cronixholdings.com" class="underline font-semibold">hello@cronixholdings.com</a></p>
+      </div>
+    `;
     return;
   }
   throw new Error(data.error);
 }
-      
+        
         currentScanData = { ...data, url };
         displayResults(data, url);
         statusMessage.innerHTML = '';
