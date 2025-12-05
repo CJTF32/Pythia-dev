@@ -771,16 +771,14 @@
         const data = await response.json();
         
         if (data.error) {
-          if (data.error === 'BLOCKED_SCAN') {
-            statusMessage.innerHTML = '';
-            showManualScanModal(url);
-            return;
-          }
-          throw new Error(data.error);
-        }
-
-        if (data.error.includes('Failed to fetch') || data.error === 'TIMEOUT') {
-    resultsDiv.innerHTML = '<p class="text-red-600 text-sm">⚠️ Unable to reach this website. Check the URL is correct.</p>';
+  if (data.error === 'BLOCKED_SCAN') {
+    statusMessage.innerHTML = '';
+    showManualScanModal(url);
+    return;
+  }
+  // Check for unreachable sites
+  if (data.error.includes('Failed to fetch') || data.error === 'TIMEOUT') {
+    statusMessage.innerHTML = '<p class="text-red-600 text-sm">⚠️ Unable to reach this website. Check the URL is correct.</p>';
     return;
   }
   throw new Error(data.error);
