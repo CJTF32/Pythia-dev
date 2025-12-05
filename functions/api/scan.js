@@ -358,8 +358,14 @@ export async function onRequestPost(context) {
     // ========================================================================
     // PHASE 2: FETCH CRUX DATA & BLEND WITH LAB SCORES
     // ========================================================================
-    const cruxData = await fetchCruxData(targetUrl);
-    result.crux = cruxData;
+   let cruxData = { hasData: false };
+try {
+  cruxData = await fetchCruxData(targetUrl);
+} catch (error) {
+  console.error('CrUX error (non-fatal):', error);
+  cruxData = { hasData: false, error: error.message };
+}
+result.crux = cruxData;
 
     if (cruxData.hasData) {
       // UPGRADE 1: Speed - cap based on real LCP
