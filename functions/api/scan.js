@@ -112,11 +112,13 @@ export async function onRequestPost(context) {
           formFactor: data.record.key?.formFactor || 'UNKNOWN'
         };
         
-      } catch (error) {
-        console.error('CrUX fetch error:', error);
-        return { hasData: false };
-      }
-    }
+} catch (error) {
+  if (error.name === 'TimeoutError') {
+    return new Response(JSON.stringify({ error: 'TIMEOUT', message: 'Site took too long to respond' }), { status: 504, headers: { 'Content-Type': 'application/json' } });
+  }
+  // Catch all other fetch errors (bad URLs, DNS failures, etc.)
+  return new Response(JSON.stringify({ error: 'Failed to fetch', message: error.message }), { status: 502, headers: { 'Content-Type': 'application/json' } });
+}
 
     // ========================================================================
     // BENCHMARK DATA (same as Phase 1)
