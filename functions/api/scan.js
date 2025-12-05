@@ -33,6 +33,8 @@ const USE_LIGHTHOUSE = true;
         const urlObj = new URL(siteUrl);
         const origin = `${urlObj.protocol}//${urlObj.hostname}`;
         
+        console.log('Fetching CrUX data for:', origin);
+        
         let response = await fetch(`${CRUX_API_URL}?key=${CRUX_API_KEY}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -40,17 +42,21 @@ const USE_LIGHTHOUSE = true;
         });
         
         let data = await response.json();
+        console.log('CrUX DESKTOP response:', response.status, data);
         
         if (!response.ok || !data.record) {
+          console.log('Trying CrUX with ALL form factors...');
           response = await fetch(`${CRUX_API_URL}?key=${CRUX_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url: origin, formFactor: 'ALL' })
           });
           data = await response.json();
+          console.log('CrUX ALL response:', response.status, data);
         }
         
         if (!response.ok || !data.record) {
+          console.log('No CrUX data available');
           return { hasData: false };
         }
         
@@ -71,6 +77,8 @@ const USE_LIGHTHOUSE = true;
           const p75 = record.metrics.cumulative_layout_shift.percentiles?.p75;
           if (p75) metrics.cls_p75 = parseFloat(p75);
         }
+        
+        console.log('CrUX metrics extracted:', metrics);
         
         return {
           hasData: true,
@@ -93,23 +101,31 @@ const USE_LIGHTHOUSE = true;
       }
 
       try {
-        // Call PageSpeed Insights API (FREE - no key needed for basic usage)
-        const psiUrl = `${PSI_API_URL}?url=${encodeURIComponent(siteUrl)}&strategy=desktop&category=PERFORMANCE`;
+        // 🔥 FIX: Include the API key in the URL
+        const psiUrl = `${PSI_API_URL}?url=${encodeURIComponent(siteUrl)}&strategy=desktop&category=PERFORMANCE&key=${PSI_API_KEY}`;
+        
+        console.log('Fetching Lighthouse data via PSI...');
         
         const response = await fetch(psiUrl, {
           signal: AbortSignal.timeout(30000) // 30 second timeout
         });
         
+        console.log('PSI response status:', response.status);
+        
         if (!response.ok) {
-          console.log('PSI API error:', response.status);
-          return { hasData: false, reason: 'api_error' };
+          const errorText = await response.text();
+          console.log('PSI API error:', response.status, errorText);
+          return { hasData: false, reason: 'api_error', status: response.status };
         }
         
         const data = await response.json();
         
         if (!data.lighthouseResult) {
+          console.log('No lighthouse result in PSI response');
           return { hasData: false, reason: 'no_lighthouse_data' };
         }
+        
+        console.log('Lighthouse data received successfully');
         
         const lhr = data.lighthouseResult;
         const audits = lhr.audits;
@@ -167,6 +183,8 @@ const USE_LIGHTHOUSE = true;
           metrics.lighthouseScore = Math.round(lhr.categories.performance.score * 100);
         }
         
+        console.log('Lighthouse metrics extracted:', metrics);
+        
         return metrics;
         
       } catch (error) {
@@ -189,117 +207,110 @@ const USE_LIGHTHOUSE = true;
 
     const SECTOR_RULES = {
       'Technology & Software': { keywords: ['facebook', 'instagram', 'twitter', 'linkedin', 'github', 'google', 'microsoft', 'apple', 'amazon', 'software', 'saas'], tldPatterns: ['.io', '.dev', '.app'] },
-      'E-commerce & Retail': { keywords: ['amazon', 'ebay', 'walmart', 'shop', 'store', 'buy', 'cart'] },
-      'Media & Entertainment': { keywords: ['netflix', 'youtube', 'cnn', 'bbc', 'news', 'media'] },
-      'Financial Services': { keywords: ['bank', 'paypal', 'stripe', 'finance', 'trading'] },
-      'Education': { keywords: ['university', 'college', 'school', 'education'], tldPatterns: ['.edu'] },
-      'Healthcare': { keywords: ['health', 'medical', 'hospital', 'clinic'] },
-      'Government': { keywords: ['government'], tldPatterns: ['.gov'] },
-      'Travel & Hospitality': { keywords: ['booking', 'hotel', 'travel', 'flight'] },
-      'Food & Beverage': { keywords: ['restaurant', 'food', 'delivery'] },
-      'Gaming': { keywords: ['steam', 'game', 'gaming'] }
+      'E-commerce & Retail': { keywords: ['shop', 'store', 'buy', 'cart', 'checkout', 'retail', 'ecommerce'], tldPatterns: ['.shop', '.store'] },
+      'Finance & Banking': { keywords: ['bank', 'finance', 'invest', 'trading', 'insurance', 'loan', 'credit'], tldPatterns: ['.bank', '.financial'] },
+      'Healthcare': { keywords: ['health', 'medical', 'hospital', 'clinic', 'pharma', 'doctor'], tldPatterns: ['.health', '.clinic'] },
+      'Education': { keywords: ['university', 'college', 'school', 'education', 'learn', 'academy'], tldPatterns: ['.edu', '.ac'] },
+      'Media & Entertainment': { keywords: ['news', 'media', 'blog', 'magazine', 'entertainment', 'streaming'], tldPatterns: ['.news', '.media'] },
+      'Travel & Hospitality': { keywords: ['hotel', 'travel', 'booking', 'flight', 'tourism', 'resort'], tldPatterns: ['.travel', '.hotel'] },
+      'Professional Services': { keywords: ['consulting', 'legal', 'law', 'accounting', 'agency'], tldPatterns: ['.law', '.consulting'] },
+      'Other': { keywords: [], tldPatterns: [] }
     };
 
-    function classifySector(domain) {
-      const domainLower = domain.toLowerCase();
+    function detectSector(url) {
+      const urlLower = url.toLowerCase();
       for (const [sector, rules] of Object.entries(SECTOR_RULES)) {
-        if (rules.keywords?.some(kw => domainLower.includes(kw))) return sector;
-        if (rules.tldPatterns?.some(tld => domainLower.endsWith(tld))) return sector;
+        if (rules.tldPatterns.some(tld => urlLower.includes(tld))) return sector;
+        if (rules.keywords.some(kw => urlLower.includes(kw))) return sector;
       }
-      return 'General';
+      return 'Other';
     }
 
-    const clamp = (value) => Math.max(0, Math.min(100, value));
-    const smoothScore = (value, points) => {
+    function clamp(val, min = 0, max = 100) {
+      return Math.max(min, Math.min(max, val));
+    }
+
+    function smoothScore(x, points) {
+      if (!Array.isArray(points) || points.length < 2) return 0;
+      points.sort((a, b) => a[0] - b[0]);
+      if (x <= points[0][0]) return clamp(points[0][1]);
+      if (x >= points[points.length - 1][0]) return clamp(points[points.length - 1][1]);
       for (let i = 0; i < points.length - 1; i++) {
         const [x1, y1] = points[i];
         const [x2, y2] = points[i + 1];
-        if (value >= x1 && value <= x2) {
-          return y1 + (y2 - y1) * ((value - x1) / (x2 - x1));
+        if (x >= x1 && x <= x2) {
+          const ratio = (x - x1) / (x2 - x1);
+          const interpolated = y1 + ratio * (y2 - y1);
+          return clamp(interpolated);
         }
       }
-      return value <= points[0][0] ? points[0][1] : points[points.length - 1][1];
-    };
+      return clamp(0);
+    }
 
     let targetUrl = url.trim();
-    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+    if (!/^https?:\/\//i.test(targetUrl)) {
       targetUrl = 'https://' + targetUrl;
     }
 
-    // Validate URL
-    try {
-      new URL(targetUrl);
-    } catch (e) {
-      return new Response(JSON.stringify({ 
-        error: 'INVALID_URL', 
-        message: 'Invalid URL format' 
-      }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
+    const result = {
+      url: targetUrl,
+      pscore: 0,
+      rating: 'C',
+      speed: 0,
+      mobile: 0,
+      seo: 0,
+      responsiveness: 0,
+      accessibility: 0,
+      privacy: 0,
+      delivery: 0,
+      sustainability: 0
+    };
+
+    const sector = detectSector(targetUrl);
 
     const startTime = Date.now();
-    let response, html;
+    const response = await fetch(targetUrl, {
+      headers: { 'User-Agent': 'Pythia-Scanner/2.0' },
+      signal: AbortSignal.timeout(10000)
+    });
+    const rawLoadTime = Date.now() - startTime;
+    const loadTime = Math.max(0, rawLoadTime - 50);
 
-    try {
-      response = await fetch(targetUrl, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-        signal: AbortSignal.timeout(10000)
-      });
-      
-      if (!response.ok) {
-        if (response.status === 403 || response.status === 429) {
-          return new Response(JSON.stringify({ error: 'BLOCKED_SCAN', message: 'Site blocks automated scans' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
-        }
-        return new Response(JSON.stringify({ error: 'Failed to fetch', message: 'Site unreachable' }), { status: 502, headers: { 'Content-Type': 'application/json' } });
-      }
-      
-      html = await response.text();
-    } catch (error) {
-      if (error.name === 'TimeoutError') {
-        return new Response(JSON.stringify({ error: 'TIMEOUT', message: 'Site took too long' }), { status: 504, headers: { 'Content-Type': 'application/json' } });
-      }
-      return new Response(JSON.stringify({ error: 'Failed to fetch', message: error.message }), { status: 502, headers: { 'Content-Type': 'application/json' } });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
     }
 
-    const rawLoadTime = Date.now() - startTime;
+    const html = await response.text();
     const responseHeaders = response.headers;
-    const sizeBytes = new Blob([html]).size;
-    const sizeMB = sizeBytes / (1024 * 1024);
-    const loadTime = Math.max(0, rawLoadTime - 200);
+
+    const sizeMB = new Blob([html]).size / (1024 * 1024);
 
     const analysis = {
-      hasHTTPS: targetUrl.startsWith('https://'),
-      hasViewport: /<meta[^>]*viewport/i.test(html),
-      hasTitle: /<title[^>]*>([^<]+)<\/title>/i.test(html),
+      hasViewport: /<meta[^>]*name=["']viewport["'][^>]*>/i.test(html),
+      hasTitle: /<title/i.test(html),
       hasDescription: /<meta[^>]*name=["']description["'][^>]*>/i.test(html),
       hasOG: /<meta[^>]*property=["']og:/i.test(html),
-      hasAltText: /<img[^>]*alt=["'][^"']+["']/i.test(html),
+      hasStructuredData: /<script[^>]*type=["']application\/ld\+json["'][^>]*>/i.test(html),
+      hasHTTPS: targetUrl.startsWith('https'),
+      hasCSP: !!responseHeaders.get('content-security-policy'),
+      hasXFrameOptions: !!responseHeaders.get('x-frame-options'),
+      hasHSTS: !!responseHeaders.get('strict-transport-security'),
+      hasPermissionsPolicy: !!responseHeaders.get('permissions-policy'),
+      hasAltText: (html.match(/<img[^>]*alt=/gi) || []).length > 0,
       hasAriaLabels: /aria-label/i.test(html),
       hasWebP: /\.webp/i.test(html),
       hasAVIF: /\.avif/i.test(html),
       hasLazyLoading: /loading=["']lazy["']/i.test(html),
-      hasStructuredData: /<script[^>]*type=["']application\/ld\+json["']/i.test(html),
-      resourceCount: (html.match(/<script|<link|<img|<style/gi) || []).length,
-      hasCSP: responseHeaders.has('content-security-policy'),
-      hasXFrameOptions: responseHeaders.has('x-frame-options'),
-      hasHSTS: responseHeaders.has('strict-transport-security'),
-      hasPermissionsPolicy: responseHeaders.has('permissions-policy')
+      resourceCount: (html.match(/<(?:img|script|link|video|audio|iframe)/gi) || []).length
     };
 
-    const domain = new URL(targetUrl).hostname;
-    const sector = classifySector(domain);
-    const result = {};
-
-    // Calculate all 8 lab scores
-    const speedScore = smoothScore(loadTime, [[0, 100], [100, 97], [200, 94], [300, 91], [400, 88], [500, 85], [600, 82], [800, 76], [1000, 70], [1500, 58], [2000, 46], [3000, 30], [5000, 15], [10000, 0]]);
+    const speedScore = smoothScore(loadTime, [[0, 100], [50, 98], [100, 96], [200, 93], [300, 90], [500, 85], [800, 78], [1000, 72], [1500, 62], [2000, 52], [3000, 38], [5000, 18], [10000, 0]]);
     result.speed = Math.round(speedScore * 10) / 10;
 
     let mobileScore = 0;
     if (analysis.hasViewport) mobileScore += 35;
-    if (analysis.hasAVIF) mobileScore += 30;
-    else if (analysis.hasWebP) mobileScore += 22;
+    const isMobileOptimized = html.match(/viewport.*width=device-width/i);
+    if (isMobileOptimized) mobileScore += 30;
     if (analysis.hasLazyLoading) mobileScore += 18;
     if (sizeMB < 1.0) mobileScore += 17;
     else if (sizeMB < 2.0) mobileScore += 12;
@@ -388,30 +399,36 @@ const USE_LIGHTHOUSE = true;
     result.crux = cruxData;
 
     // ========================================================================
-    // PHASE 3: Fetch Lighthouse data if no CrUX (via PageSpeed Insights)
+    // PHASE 3: Fetch Lighthouse data (ALWAYS try to get it for better data)
+    // 🔥 FIX: Changed to always attempt Lighthouse if enabled
     // ========================================================================
     let lighthouseData = { hasData: false };
     
-    if (!cruxData.hasData && USE_LIGHTHOUSE) {
+    if (USE_LIGHTHOUSE) {
       try {
+        console.log('Attempting to fetch Lighthouse data...');
         lighthouseData = await fetchLighthouseData(targetUrl);
       } catch (error) {
         console.error('Lighthouse error (non-fatal):', error);
       }
     } else {
-      lighthouseData.reason = cruxData.hasData ? 'crux_available' : 'lighthouse_disabled';
+      lighthouseData.reason = 'lighthouse_disabled';
     }
     result.lighthouse = lighthouseData;
 
     // ========================================================================
     // BLEND CRUX OR LIGHTHOUSE DATA
+    // 🔥 FIX: Prefer CrUX but use Lighthouse as fallback
     // ========================================================================
     const dataSource = cruxData.hasData ? cruxData : lighthouseData;
 
     if (dataSource.hasData) {
+      console.log('Using data source:', cruxData.hasData ? 'CrUX' : 'Lighthouse');
+      
       // Speed capping by real/lab LCP
       const lcp = dataSource.lcp_p75_ms || dataSource.lcp_ms;
       if (lcp) {
+        console.log('LCP value:', lcp, 'ms');
         if (lcp > 4000) result.speed = Math.min(result.speed, 60);
         else if (lcp > 2500) result.speed = Math.min(result.speed, 80);
       }
@@ -419,12 +436,15 @@ const USE_LIGHTHOUSE = true;
       // Responsiveness upgrade to real/lab INP
       const inp = dataSource.inp_p75_ms || dataSource.inp_ms;
       if (inp !== undefined && inp !== null) {
+        console.log('INP value:', inp, 'ms');
         if (inp <= 100) result.responsiveness = 100;
         else if (inp <= 200) result.responsiveness = 90;
         else if (inp <= 300) result.responsiveness = 70;
         else if (inp <= 500) result.responsiveness = 50;
         else result.responsiveness = 20;
       }
+    } else {
+      console.log('No CrUX or Lighthouse data available - using lab data only');
     }
 
     // Calculate P-Score
@@ -453,7 +473,7 @@ const USE_LIGHTHOUSE = true;
 
     result._meta = {
       scannedAt: new Date().toISOString(),
-      version: '2.0-phase3-psi',
+      version: '2.0-phase3-psi-fixed',
       loadTimeMs: rawLoadTime,
       pageSizeMB: Math.round(sizeMB * 100) / 100,
       resourceCount: analysis.resourceCount,
@@ -483,6 +503,7 @@ const USE_LIGHTHOUSE = true;
     });
 
   } catch (error) {
+    console.error('Fatal error:', error);
     return new Response(JSON.stringify({ 
       error: error.message 
     }), {
