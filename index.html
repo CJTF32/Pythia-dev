@@ -769,7 +769,7 @@
       }
     }
 
-async function scanWebsite() {
+asynasync function scanWebsite() {
   const urlInput = document.getElementById('urlInput');
   const scanBtn = document.getElementById('scanBtn');
   const statusMessage = document.getElementById('statusMessage');
@@ -798,54 +798,48 @@ async function scanWebsite() {
     
     const data = await response.json();
 
-    const data = await response.json();
+    console.log('Scan result:', {
+      dataSource: data._meta?.dataSource,
+      hasCrux: data.crux?.hasData,
+      hasLighthouse: data.lighthouse?.hasData,
+      pscore: data.pscore,
+      rating: data.rating
+    });
 
-// Debug logging
-console.log('Scan result:', {
-  dataSource: data._meta?.dataSource,
-  hasCrux: data.crux?.hasData,
-  hasLighthouse: data.lighthouse?.hasData,
-  pscore: data.pscore,
-  rating: data.rating
-});
-
-if (data.error) {
-  // Handle blocked scans (403/429 errors)
-  if (data.error === 'BLOCKED_SCAN') {
-    statusMessage.innerHTML = '';
-    showManualScanModal(url);
-    return;
-  }
-  
-  // Handle non-existent sites (connection failures, DNS errors, 404s, etc.)
-  if (data.error === 'SITE_NOT_FOUND' || 
-      data.error === 'CONNECTION_FAILED' || 
-      data.error === 'INVALID_URL' || 
-      data.error === 'TIMEOUT' ||
-      data.error.includes('Failed to fetch')) {
-    statusMessage.innerHTML = `
-      <div class="bg-red-50 border-2 border-red-300 rounded-lg p-6 mt-4">
-        <p class="text-red-800 font-bold text-lg mb-2">⚠️ We don't think this site exists!</p>
-        <p class="text-red-700 mb-3">We couldn't reach <strong>${url}</strong></p>
-        <p class="text-gray-700 text-sm mb-3">
-          ${data.error === 'TIMEOUT' ? 'The site took too long to respond.' : 
-            data.error === 'INVALID_URL' ? 'The URL format is invalid.' :
-            'The site may not exist, be temporarily down, or have connection issues.'}
-        </p>
-        <p class="text-red-600 text-sm">
-          If you think we're wrong, email us at 
-          <a href="mailto:hello@cronixholdings.com" class="underline font-semibold hover:text-red-800">
-            hello@cronixholdings.com
-          </a>
-        </p>
-      </div>
-    `;
-    return;
-  }
-  
-  // Generic error fallback
-  throw new Error(data.message || data.error);
-}
+    if (data.error) {
+      if (data.error === 'BLOCKED_SCAN') {
+        statusMessage.innerHTML = '';
+        showManualScanModal(url);
+        return;
+      }
+      
+      if (data.error === 'SITE_NOT_FOUND' || 
+          data.error === 'CONNECTION_FAILED' || 
+          data.error === 'INVALID_URL' || 
+          data.error === 'TIMEOUT' ||
+          data.error.includes('Failed to fetch')) {
+        statusMessage.innerHTML = `
+          <div class="bg-red-50 border-2 border-red-300 rounded-lg p-6 mt-4">
+            <p class="text-red-800 font-bold text-lg mb-2">⚠️ We don't think this site exists!</p>
+            <p class="text-red-700 mb-3">We couldn't reach <strong>${url}</strong></p>
+            <p class="text-gray-700 text-sm mb-3">
+              ${data.error === 'TIMEOUT' ? 'The site took too long to respond.' : 
+                data.error === 'INVALID_URL' ? 'The URL format is invalid.' :
+                'The site may not exist, be temporarily down, or have connection issues.'}
+            </p>
+            <p class="text-red-600 text-sm">
+              If you think we're wrong, email us at 
+              <a href="mailto:hello@cronixholdings.com" class="underline font-semibold hover:text-red-800">
+                hello@cronixholdings.com
+              </a>
+            </p>
+          </div>
+        `;
+        return;
+      }
+      
+      throw new Error(data.message || data.error);
+    }
     
     currentScanData = { ...data, url };
     displayResults(data, url);
@@ -864,7 +858,6 @@ if (data.error) {
     scanBtn.textContent = 'Scan';
   }
 }
-
     
 // UPDATED COMPETITOR SCANNING FUNCTIONS
 // Replace the scanCompetitor() and scanTechCompetitor() functions in your index-65.html
