@@ -170,7 +170,47 @@ export async function onRequestPost(context) {
           metrics.lighthouseScore = Math.round(lhr.categories.performance.score * 100);
         }
         
-        console.log('✅ Lighthouse data received');
+        // Extract Lighthouse opportunities (recommendations)
+        const opportunities = [];
+        const opportunityAudits = [
+          'unused-css-rules',
+          'unused-javascript',
+          'modern-image-formats',
+          'offscreen-images',
+          'render-blocking-resources',
+          'unminified-css',
+          'unminified-javascript',
+          'efficient-animated-content',
+          'duplicated-javascript',
+          'legacy-javascript',
+          'total-byte-weight',
+          'uses-optimized-images',
+          'uses-text-compression',
+          'uses-responsive-images',
+          'server-response-time'
+        ];
+        
+        for (const auditId of opportunityAudits) {
+          const audit = audits[auditId];
+          if (audit && audit.score !== null && audit.score < 1) {
+            opportunities.push({
+              id: auditId,
+              title: audit.title,
+              description: audit.description,
+              score: audit.score,
+              displayValue: audit.displayValue || '',
+              numericValue: audit.numericValue,
+              numericUnit: audit.numericUnit,
+              details: audit.details?.items?.slice(0, 5) || []
+            });
+          }
+        }
+        
+        // Sort by impact (lower score = higher priority)
+        opportunities.sort((a, b) => a.score - b.score);
+        metrics.opportunities = opportunities.slice(0, 8); // Top 8 opportunities
+        
+        console.log('✅ Lighthouse data received with', metrics.opportunities.length, 'opportunities');
         return metrics;
         
       } catch (error) {
