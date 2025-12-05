@@ -1,7 +1,8 @@
 // ============================================================================
-// PYTHIA RATING ENGINE V2.1 - DIAGNOSTIC VERSION
+// PYTHIA RATING ENGINE V3.0 - STRATEGIC PIVOT
 // ============================================================================
-// Enhanced with better error handling and logging
+// New Formula: Lighthouse (40%) + Security (20%) + Privacy (20%) + 
+//              Sustainability (15%) + Infrastructure (5%)
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -16,17 +17,34 @@ export async function onRequestPost(context) {
       });
     }
 
-    // API Keys - You may need to replace these with fresh ones
+    // API Keys
     const CRUX_API_KEY = 'AIzaSyD3vkIWqvctKx1BRu2CEEOF7goYTyAx5Bs';
     const CRUX_API_URL = 'https://chromeuxreport.googleapis.com/v1/records:queryRecord';
-    
-    // PageSpeed Insights API
     const PSI_API_KEY = 'AIzaSyBYVTe6sRJGyB9vtI0cnvBxRFQ4ruNPf8M';
     const PSI_API_URL = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed';
     const USE_LIGHTHOUSE = true;
 
     // ========================================================================
-    // ENHANCED CRUX FETCH WITH DETAILED ERROR LOGGING
+    // HELPER FUNCTIONS
+    // ========================================================================
+    function clamp(val, min = 0, max = 100) {
+      return Math.max(min, Math.min(max, val));
+    }
+
+    function smoothScore(value, points) {
+      for (let i = 0; i < points.length - 1; i++) {
+        const [x1, y1] = points[i];
+        const [x2, y2] = points[i + 1];
+        if (value >= x1 && value <= x2) {
+          const ratio = (value - x1) / (x2 - x1);
+          return y1 + ratio * (y2 - y1);
+        }
+      }
+      return value <= points[0][0] ? points[0][1] : points[points.length - 1][1];
+    }
+
+    // ========================================================================
+    // CRUX DATA FETCH
     // ========================================================================
     async function fetchCruxData(siteUrl) {
       try {
@@ -42,63 +60,34 @@ export async function onRequestPost(context) {
         });
         
         let data = await response.json();
-        console.log('📊 CrUX DESKTOP response:', {
-          status: response.status,
-          hasRecord: !!data.record,
-          error: data.error
-        });
         
         if (!response.ok || !data.record) {
-          console.log('🔄 Trying CrUX with ALL form factors...');
           response = await fetch(`${CRUX_API_URL}?key=${CRUX_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url: origin })
           });
           data = await response.json();
-          console.log('📊 CrUX ALL response:', {
-            status: response.status,
-            hasRecord: !!data.record,
-            error: data.error
-          });
         }
         
-        if (!response.ok) {
-          console.error('❌ CrUX API error:', data.error);
-          return { 
-            hasData: false, 
-            reason: 'api_error',
-            errorDetails: data.error 
-          };
-        }
-        
-        if (!data.record) {
-          console.log('⚠️ No CrUX data available for this origin');
-          return { 
-            hasData: false,
-            reason: 'no_data'
-          };
+        if (!response.ok || !data.record) {
+          return { hasData: false };
         }
         
         const record = data.record;
         const metrics = {};
         
-        if (record.metrics?.largest_contentful_paint) {
-          const p75 = record.metrics.largest_contentful_paint.percentiles?.p75;
-          if (p75) metrics.lcp_p75_ms = parseFloat(p75);
+        if (record.metrics?.largest_contentful_paint?.percentiles?.p75) {
+          metrics.lcp_p75_ms = parseFloat(record.metrics.largest_contentful_paint.percentiles.p75);
         }
         
-        if (record.metrics?.interaction_to_next_paint) {
-          const p75 = record.metrics.interaction_to_next_paint.percentiles?.p75;
-          if (p75) metrics.inp_p75_ms = parseFloat(p75);
+        if (record.metrics?.interaction_to_next_paint?.percentiles?.p75) {
+          metrics.inp_p75_ms = parseFloat(record.metrics.interaction_to_next_paint.percentiles.p75);
         }
         
-        if (record.metrics?.cumulative_layout_shift) {
-          const p75 = record.metrics.cumulative_layout_shift.percentiles?.p75;
-          if (p75) metrics.cls_p75 = parseFloat(p75);
+        if (record.metrics?.cumulative_layout_shift?.percentiles?.p75) {
+          metrics.cls_p75 = parseFloat(record.metrics.cumulative_layout_shift.percentiles.p75);
         }
-        
-        console.log('✅ CrUX metrics extracted:', metrics);
         
         return {
           hasData: true,
@@ -107,17 +96,13 @@ export async function onRequestPost(context) {
         };
         
       } catch (error) {
-        console.error('❌ CrUX fetch error:', error.message);
-        return { 
-          hasData: false,
-          reason: 'fetch_error',
-          errorMessage: error.message
-        };
+        console.error('CrUX error:', error.message);
+        return { hasData: false };
       }
     }
 
     // ========================================================================
-    // ENHANCED LIGHTHOUSE FETCH WITH DETAILED ERROR LOGGING
+    // LIGHTHOUSE DATA FETCH
     // ========================================================================
     async function fetchLighthouseData(siteUrl) {
       if (!USE_LIGHTHOUSE) {
@@ -127,328 +112,259 @@ export async function onRequestPost(context) {
       try {
         const psiUrl = `${PSI_API_URL}?url=${encodeURIComponent(siteUrl)}&strategy=desktop&category=performance&key=${PSI_API_KEY}`;
         
-        console.log('🔍 Fetching Lighthouse data via PSI...');
+        console.log('🔍 Fetching Lighthouse data...');
         
         const response = await fetch(psiUrl, {
           signal: AbortSignal.timeout(30000)
         });
         
-        console.log('📊 PSI response status:', response.status);
-        
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error('❌ PSI API error:', {
-            status: response.status,
-            statusText: response.statusText,
-            error: errorText
-          });
-          return { 
-            hasData: false, 
-            reason: 'api_error', 
-            status: response.status,
-            errorDetails: errorText
-          };
+          return { hasData: false, reason: 'api_error' };
         }
         
         const data = await response.json();
         
         if (!data.lighthouseResult) {
-          console.error('❌ No lighthouse result in PSI response');
           return { hasData: false, reason: 'no_lighthouse_data' };
         }
-        
-        console.log('✅ Lighthouse data received successfully');
         
         const lhr = data.lighthouseResult;
         const audits = lhr.audits;
         
-        // Extract metrics
         const metrics = {
           hasData: true,
           lcp_ms: null,
           inp_ms: null,
           cls: null,
           tbt_ms: null,
-          tti_ms: null,
           fcp_ms: null,
           si_ms: null,
           lighthouseScore: null
         };
         
-        // Largest Contentful Paint
         if (audits['largest-contentful-paint']?.numericValue) {
           metrics.lcp_ms = Math.round(audits['largest-contentful-paint'].numericValue);
         }
         
-        // Interaction to Next Paint
         if (audits['interaction-to-next-paint']?.numericValue) {
           metrics.inp_ms = Math.round(audits['interaction-to-next-paint'].numericValue);
         }
         
-        // Cumulative Layout Shift
         if (audits['cumulative-layout-shift']?.numericValue !== undefined) {
           metrics.cls = parseFloat(audits['cumulative-layout-shift'].numericValue.toFixed(3));
         }
         
-        // Total Blocking Time
         if (audits['total-blocking-time']?.numericValue) {
           metrics.tbt_ms = Math.round(audits['total-blocking-time'].numericValue);
         }
         
-        // Time to Interactive
-        if (audits['interactive']?.numericValue) {
-          metrics.tti_ms = Math.round(audits['interactive'].numericValue);
-        }
-        
-        // First Contentful Paint
         if (audits['first-contentful-paint']?.numericValue) {
           metrics.fcp_ms = Math.round(audits['first-contentful-paint'].numericValue);
         }
         
-        // Speed Index
         if (audits['speed-index']?.numericValue) {
           metrics.si_ms = Math.round(audits['speed-index'].numericValue);
         }
         
-        // Lighthouse Performance Score
         if (lhr.categories?.performance?.score !== undefined) {
           metrics.lighthouseScore = Math.round(lhr.categories.performance.score * 100);
         }
         
-        console.log('✅ Lighthouse metrics extracted:', {
-          lcp: metrics.lcp_ms,
-          inp: metrics.inp_ms,
-          cls: metrics.cls,
-          score: metrics.lighthouseScore
-        });
-        
-        // Extract opportunities and diagnostics
-        metrics.opportunities = [];
-        metrics.diagnostics = [];
-        
-        const opportunityAudits = [
-          'render-blocking-resources',
-          'unused-css-rules',
-          'unused-javascript',
-          'uses-optimized-images',
-          'modern-image-formats',
-          'uses-text-compression',
-          'uses-responsive-images',
-          'offscreen-images',
-          'unminified-css',
-          'unminified-javascript',
-          'efficient-animated-content',
-          'duplicated-javascript',
-          'legacy-javascript',
-          'total-byte-weight',
-          'uses-long-cache-ttl',
-          'font-display',
-          'third-party-summary',
-          'largest-contentful-paint-element'
-        ];
-        
-        opportunityAudits.forEach(auditId => {
-          const audit = audits[auditId];
-          if (audit && audit.score !== null && audit.score < 1) {
-            metrics.opportunities.push({
-              id: auditId,
-              title: audit.title,
-              description: audit.description,
-              score: Math.round(audit.score * 100),
-              displayValue: audit.displayValue || '',
-              numericValue: audit.numericValue,
-              numericUnit: audit.numericUnit
-            });
-          }
-        });
-        
+        console.log('✅ Lighthouse data received');
         return metrics;
         
       } catch (error) {
-        console.error('❌ Lighthouse fetch error:', error.message);
-        return { 
-          hasData: false,
-          reason: 'fetch_error',
-          errorMessage: error.message
-        };
+        console.error('Lighthouse error:', error.message);
+        return { hasData: false, reason: 'fetch_error' };
       }
     }
 
     // ========================================================================
-    // REST OF YOUR PYTHIA SCAN CODE (unchanged)
+    // PHASE 1: HTML Analysis
     // ========================================================================
-    
-    function clamp(val, min = 0, max = 100) {
-      return Math.max(min, Math.min(max, val));
-    }
-
-    function smoothScore(val, points) {
-      if (val <= points[0][0]) return points[0][1];
-      if (val >= points[points.length - 1][0]) return points[points.length - 1][1];
-      for (let i = 0; i < points.length - 1; i++) {
-        if (val >= points[i][0] && val <= points[i + 1][0]) {
-          const t = (val - points[i][0]) / (points[i + 1][0] - points[i][0]);
-          return points[i][1] + t * (points[i + 1][1] - points[i][1]);
-        }
-      }
-      return 0;
-    }
-
-    const BENCHMARK_DATA = {
-      'AAA': 'Top 1% of websites',
-      'AA': 'Top 5% of websites',
-      'A': 'Top 10% of websites',
-      'BBB': 'Top 20% of websites',
-      'BB': 'Top 30% of websites',
-      'B': 'Top 50% of websites',
-      'CCC': 'Bottom 50% of websites',
-      'CC': 'Bottom 30% of websites',
-      'C': 'Bottom 10% of websites'
-    };
-
-    let targetUrl = url.trim();
-    if (!targetUrl.match(/^https?:\/\//i)) {
-      targetUrl = 'https://' + targetUrl;
-    }
-
-    // Phase 1: Basic scan
-    console.log('🚀 Starting scan for:', targetUrl);
-    const startTime = Date.now();
-    const response = await fetch(targetUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate, br'
-      },
-      signal: AbortSignal.timeout(15000)
-    });
-
-    if (!response.ok) {
-      return new Response(JSON.stringify({ 
-        error: 'SITE_NOT_FOUND',
-        message: `HTTP ${response.status}` 
-      }), {
+    const normalizedUrl = url.includes('://') ? url : `https://${url}`;
+    let targetUrl;
+    try {
+      const urlObj = new URL(normalizedUrl);
+      targetUrl = urlObj.href;
+    } catch (error) {
+      return new Response(JSON.stringify({ error: 'INVALID_URL' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    const html = await response.text();
+    console.log('🎯 Scanning:', targetUrl);
+    
+    const startTime = Date.now();
+    const response = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; PythiaBot/1.0; +https://pythia.dev)'
+      },
+      signal: AbortSignal.timeout(15000)
+    });
+    
+    if (!response.ok) {
+      return new Response(JSON.stringify({ 
+        error: response.status === 404 ? 'SITE_NOT_FOUND' : 'CONNECTION_FAILED' 
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
     const rawLoadTime = Date.now() - startTime;
+    const html = await response.text();
     const responseHeaders = response.headers;
 
-    const sector = 'General';
-    const sizeMB = new Blob([html]).size / 1024 / 1024;
+    // Calculate page size
+    const sizeMB = new Blob([html]).size / (1024 * 1024);
 
+    // Basic HTML analysis
     const analysis = {
-      resourceCount: (html.match(/<(script|link|img|video|audio|iframe)/gi) || []).length,
-      hasTitle: /<title/i.test(html),
-      hasDescription: /name=["']description["']/i.test(html),
-      hasOG: /property=["']og:/i.test(html),
-      hasStructuredData: /application\/ld\+json/i.test(html) || /<script[^>]*type=["']application\/ld\+json["']/i.test(html),
       hasHTTPS: targetUrl.startsWith('https://'),
-      hasAltText: /alt=["']/i.test(html),
+      hasCSP: !!responseHeaders.get('content-security-policy'),
+      hasXFrameOptions: !!responseHeaders.get('x-frame-options'),
+      hasHSTS: !!responseHeaders.get('strict-transport-security'),
+      hasPermissionsPolicy: !!responseHeaders.get('permissions-policy'),
+      hasViewport: /<meta[^>]+viewport/i.test(html),
+      hasAltText: /<img[^>]+alt=/i.test(html),
       hasAriaLabels: /aria-label/i.test(html),
-      hasViewport: /name=["']viewport["']/i.test(html),
+      hasWebP: /<img[^>]+\.webp|<source[^>]+\.webp/i.test(html),
+      hasAVIF: /<img[^>]+\.avif|<source[^>]+\.avif/i.test(html),
       hasLazyLoading: /loading=["']lazy["']/i.test(html),
-      hasWebP: /\.webp/i.test(html),
-      hasAVIF: /\.avif/i.test(html),
-      hasCSP: responseHeaders.get('content-security-policy') !== null,
-      hasXFrameOptions: responseHeaders.get('x-frame-options') !== null,
-      hasHSTS: responseHeaders.get('strict-transport-security') !== null,
-      hasPermissionsPolicy: responseHeaders.get('permissions-policy') !== null
+      resourceCount: (html.match(/<link|<script|<img/gi) || []).length
     };
 
-    const result = {};
-    const loadTime = rawLoadTime < 50 ? 300 : rawLoadTime;
+    // Extract cookies from headers
+    const cookieHeaders = responseHeaders.get('set-cookie') || '';
+    const cookieCount = cookieHeaders ? cookieHeaders.split(',').length : 0;
 
-    let speedScore = smoothScore(loadTime, [
-      [0, 100], [50, 98], [100, 96], [200, 93], [300, 90], [500, 85], [800, 78],
-      [1000, 72], [1500, 62], [2000, 52], [3000, 38], [5000, 18], [10000, 0]
-    ]);
-    if (sizeMB > 5) speedScore -= Math.min(15, (sizeMB - 5) * 3);
-    result.speed = Math.round(clamp(speedScore) * 10) / 10;
+    // Detect trackers in HTML
+    const trackerPatterns = [
+      /google-analytics\.com|googletagmanager\.com/i,
+      /facebook\.com\/tr|facebook\.net\/en_US\/fbevents/i,
+      /doubleclick\.net/i,
+      /hotjar\.com/i,
+      /mixpanel\.com/i,
+      /segment\.com|segment\.io/i,
+      /amplitude\.com/i,
+      /fullstory\.com/i
+    ];
+    const trackerCount = trackerPatterns.filter(pattern => pattern.test(html)).length;
 
-    let mobileScore = 0;
-    const isMobileOptimized = html.match(/viewport.*width=device-width/i);
-    if (isMobileOptimized) mobileScore += 30;
-    if (analysis.hasLazyLoading) mobileScore += 18;
-    if (sizeMB < 1.0) mobileScore += 17;
-    else if (sizeMB < 2.0) mobileScore += 12;
-    else if (sizeMB < 3.0) mobileScore += 8;
-    else if (sizeMB < 5.0) mobileScore += 4;
-    result.mobile = Math.round(mobileScore * 10) / 10;
+    // Count third-party domains
+    const domainMatches = html.match(/https?:\/\/([^\/\s"']+)/gi) || [];
+    const uniqueDomains = new Set(
+      domainMatches.map(url => {
+        try {
+          return new URL(url).hostname;
+        } catch {
+          return null;
+        }
+      }).filter(Boolean)
+    );
+    const siteDomain = new URL(targetUrl).hostname;
+    const thirdPartyDomains = Array.from(uniqueDomains).filter(d => !d.includes(siteDomain)).length;
 
-    let seoScore = 0;
-    if (analysis.hasTitle) seoScore += 22;
-    if (analysis.hasDescription) seoScore += 24;
-    if (analysis.hasOG) seoScore += 18;
-    if (analysis.hasStructuredData) seoScore += 16;
-    if (analysis.hasHTTPS) seoScore += 12;
-    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-    if (titleMatch && titleMatch[1]) {
-      const titleLength = titleMatch[1].length;
-      if (titleLength >= 30 && titleLength <= 60) seoScore += 8;
-      else if (titleLength >= 20 && titleLength <= 70) seoScore += 4;
-    }
-    result.seo = Math.round(seoScore * 10) / 10;
+    // Detect privacy policy
+    const hasPrivacyPolicy = /privacy[- ]?policy/i.test(html);
 
-    const responsivenessScore = smoothScore(loadTime, [
-      [0, 100], [50, 98], [100, 96], [200, 93], [300, 90], [500, 85], [800, 78],
-      [1000, 72], [1500, 62], [2000, 52], [3000, 38], [5000, 18], [10000, 0]
-    ]);
-    result.responsiveness = Math.round(responsivenessScore * 10) / 10;
+    // Detect cookie consent mechanism
+    const hasCookieConsent = /cookie[- ]?consent|accept[- ]?cookies|gdpr/i.test(html);
 
-    let accessibilityScore = 15;
-    if (analysis.hasAltText) accessibilityScore += 38;
-    if (analysis.hasAriaLabels) accessibilityScore += 32;
-    if (analysis.hasViewport) accessibilityScore += 10;
-    if (/<h[1-6]/i.test(html)) accessibilityScore += 5;
-    result.accessibility = Math.round(accessibilityScore * 10) / 10;
+    // Initialize result object
+    const result = {
+      performance: 0,
+      security: 0,
+      privacy: 0,
+      sustainability: 0,
+      infrastructure: 0
+    };
 
+    // ========================================================================
+    // INDEX 1: PERFORMANCE (40%) - FROM LIGHTHOUSE
+    // ========================================================================
+    // This will be populated from Lighthouse data
+    result.performance = 0; // Placeholder, updated below
+
+    // ========================================================================
+    // INDEX 2: SECURITY (20%)
+    // ========================================================================
+    let securityScore = 0;
+    if (analysis.hasHTTPS) securityScore += 35;
+    if (analysis.hasCSP) securityScore += 22;
+    if (analysis.hasXFrameOptions) securityScore += 16;
+    if (analysis.hasHSTS) securityScore += 18;
+    if (analysis.hasPermissionsPolicy) securityScore += 9;
+    result.security = Math.round(securityScore * 10) / 10;
+
+    // ========================================================================
+    // INDEX 3: PRIVACY & TRACKING (20%)
+    // ========================================================================
     let privacyScore = 0;
-    if (analysis.hasHTTPS) privacyScore += 35;
-    if (analysis.hasCSP) privacyScore += 22;
-    if (analysis.hasXFrameOptions) privacyScore += 16;
-    if (analysis.hasHSTS) privacyScore += 18;
-    if (analysis.hasPermissionsPolicy) privacyScore += 9;
+
+    // Cookie count (30 points max)
+    if (cookieCount === 0) privacyScore += 30;
+    else if (cookieCount <= 5) privacyScore += 20;
+    else if (cookieCount <= 10) privacyScore += 10;
+    else privacyScore += 0;
+
+    // Tracker detection (25 points max)
+    if (trackerCount === 0) privacyScore += 25;
+    else if (trackerCount <= 2) privacyScore += 15;
+    else if (trackerCount <= 5) privacyScore += 5;
+    else privacyScore += 0;
+
+    // Privacy policy presence (15 points)
+    if (hasPrivacyPolicy) privacyScore += 15;
+
+    // GDPR compliance signals (20 points)
+    if (hasCookieConsent) privacyScore += 15;
+    // Additional 5 points for opt-out mechanism would require deeper analysis
+
+    // Third-party domain count (10 points)
+    if (thirdPartyDomains < 5) privacyScore += 10;
+    else if (thirdPartyDomains <= 10) privacyScore += 5;
+    else privacyScore += 0;
+
     result.privacy = Math.round(privacyScore * 10) / 10;
 
-    let deliveryScore = 0;
-    const cdnHeaders = responseHeaders.get('cf-ray') || responseHeaders.get('x-amz-cf-id') || responseHeaders.get('x-cache');
-    if (cdnHeaders) deliveryScore += 48;
-    const cacheControl = responseHeaders.get('cache-control');
-    if (cacheControl) {
-      if (cacheControl.includes('max-age')) {
-        const maxAge = parseInt(cacheControl.match(/max-age=(\d+)/)?.[1] || '0');
-        if (maxAge > 86400) deliveryScore += 28;
-        else if (maxAge > 3600) deliveryScore += 18;
-        else if (maxAge > 0) deliveryScore += 8;
-      }
-      if (cacheControl.includes('public')) deliveryScore += 12;
-      if (cacheControl.includes('immutable')) deliveryScore += 12;
-    }
-    result.delivery = Math.round(deliveryScore * 10) / 10;
-
+    // ========================================================================
+    // INDEX 4: SUSTAINABILITY (15%)
+    // ========================================================================
     let sustainabilityScore = 0;
+
+    // Page weight efficiency (38 points)
     const weightScore = smoothScore(sizeMB, [
       [0, 38], [0.5, 36], [1, 33], [1.5, 30], [2, 27], [2.4, 24], [3, 20],
       [4, 14], [5, 9], [7, 5], [10, 2], [20, 1], [50, 0]
     ]);
     sustainabilityScore += weightScore;
+
+    // Green hosting (24 points)
     if (responseHeaders.get('cf-ray')) sustainabilityScore += 24;
-    else if (cdnHeaders) sustainabilityScore += 14;
-    if (cacheControl) sustainabilityScore += 6;
+    else if (responseHeaders.get('x-amz-cf-id') || responseHeaders.get('x-cache')) sustainabilityScore += 14;
+
+    // Caching strategy (6 points)
+    if (responseHeaders.get('cache-control')) sustainabilityScore += 6;
+
+    // Image format optimization (19 points)
     if (analysis.hasAVIF) sustainabilityScore += 19;
     else if (analysis.hasWebP) sustainabilityScore += 14;
+
+    // Lazy loading (9 points)
     if (analysis.hasLazyLoading) sustainabilityScore += 9;
+
+    // Resource efficiency (14 points)
     const resourceEfficiency = smoothScore(analysis.resourceCount, [
       [0, 14], [20, 13], [40, 11], [60, 9], [80, 7], [100, 5], [150, 2], [200, 0]
     ]);
     sustainabilityScore += resourceEfficiency;
+
     result.sustainability = Math.round(clamp(sustainabilityScore) * 10) / 10;
 
+    // Calculate CO2
     const carbonIntensity = responseHeaders.get('cf-ray') ? 50 : 442;
     const co2PerView = (sizeMB / 1024) * 0.81 * carbonIntensity;
     result.sustainability_details = {
@@ -458,13 +374,36 @@ export async function onRequestPost(context) {
     };
 
     // ========================================================================
+    // INDEX 5: INFRASTRUCTURE (5%)
+    // ========================================================================
+    let infrastructureScore = 0;
+
+    // CDN usage (48 points)
+    const hasCDN = responseHeaders.get('cf-ray') || responseHeaders.get('x-amz-cf-id') || responseHeaders.get('x-cache');
+    if (hasCDN) infrastructureScore += 48;
+
+    // Cache-Control headers (40 points)
+    const cacheControl = responseHeaders.get('cache-control');
+    if (cacheControl) {
+      if (cacheControl.includes('max-age')) {
+        const maxAge = parseInt(cacheControl.match(/max-age=(\d+)/)?.[1] || '0');
+        if (maxAge > 86400) infrastructureScore += 28;
+        else if (maxAge > 3600) infrastructureScore += 18;
+        else if (maxAge > 0) infrastructureScore += 8;
+      }
+      if (cacheControl.includes('public')) infrastructureScore += 12;
+      if (cacheControl.includes('immutable')) infrastructureScore += 12;
+    }
+
+    result.infrastructure = Math.round(infrastructureScore * 10) / 10;
+
+    // ========================================================================
     // PHASE 2: Fetch CrUX data
     // ========================================================================
-    console.log('📊 Phase 2: Fetching CrUX data...');
+    console.log('📊 Fetching CrUX data...');
     let cruxData = { hasData: false };
     try {
       cruxData = await fetchCruxData(targetUrl);
-      console.log('CrUX result:', cruxData);
     } catch (error) {
       console.error('CrUX error (non-fatal):', error);
     }
@@ -473,61 +412,43 @@ export async function onRequestPost(context) {
     // ========================================================================
     // PHASE 3: Fetch Lighthouse data
     // ========================================================================
-    console.log('🔬 Phase 3: Fetching Lighthouse data...');
+    console.log('🔬 Fetching Lighthouse data...');
     let lighthouseData = { hasData: false };
     
     if (USE_LIGHTHOUSE) {
       try {
         lighthouseData = await fetchLighthouseData(targetUrl);
-        console.log('Lighthouse result:', lighthouseData);
       } catch (error) {
         console.error('Lighthouse error (non-fatal):', error);
       }
-    } else {
-      lighthouseData.reason = 'lighthouse_disabled';
     }
     result.lighthouse = lighthouseData;
 
     // ========================================================================
-    // BLEND CRUX OR LIGHTHOUSE DATA
+    // UPDATE PERFORMANCE SCORE FROM LIGHTHOUSE
     // ========================================================================
-    const dataSource = cruxData.hasData ? cruxData : lighthouseData;
-
-    if (dataSource.hasData) {
-      console.log('✅ Using data source:', cruxData.hasData ? 'CrUX' : 'Lighthouse');
-      
-      // Speed capping by real/lab LCP
-      const lcp = dataSource.lcp_p75_ms || dataSource.lcp_ms;
-      if (lcp) {
-        console.log('📈 LCP value:', lcp, 'ms');
-        if (lcp > 4000) result.speed = Math.min(result.speed, 60);
-        else if (lcp > 2500) result.speed = Math.min(result.speed, 80);
-      }
-
-      // Responsiveness upgrade to real/lab INP
-      const inp = dataSource.inp_p75_ms || dataSource.inp_ms;
-      if (inp !== undefined && inp !== null) {
-        console.log('📈 INP value:', inp, 'ms');
-        if (inp <= 100) result.responsiveness = 100;
-        else if (inp <= 200) result.responsiveness = 90;
-        else if (inp <= 300) result.responsiveness = 70;
-        else if (inp <= 500) result.responsiveness = 50;
-        else result.responsiveness = 20;
-      }
+    if (lighthouseData.hasData && lighthouseData.lighthouseScore !== null) {
+      result.performance = lighthouseData.lighthouseScore;
+      console.log('✅ Using Lighthouse Performance Score:', result.performance);
     } else {
-      console.log('⚠️ No CrUX or Lighthouse data available - using lab data only');
+      // Fallback: estimate from load time if no Lighthouse data
+      console.log('⚠️ No Lighthouse data - using fallback performance estimate');
+      const loadTimeSeconds = rawLoadTime / 1000;
+      result.performance = Math.round(smoothScore(loadTimeSeconds, [
+        [0, 100], [0.5, 95], [1, 90], [1.5, 85], [2, 80], [3, 70], 
+        [4, 60], [5, 50], [7, 40], [10, 20], [15, 0]
+      ]));
     }
 
-    // Calculate P-Score
+    // ========================================================================
+    // CALCULATE P-SCORE WITH NEW WEIGHTS
+    // ========================================================================
     const pscore = 
-      result.speed * 0.25 +
-      result.mobile * 0.20 +
-      result.seo * 0.15 +
-      result.responsiveness * 0.12 +
-      result.accessibility * 0.10 +
-      result.privacy * 0.08 +
-      result.delivery * 0.06 +
-      result.sustainability * 0.04;
+      result.performance * 0.40 +
+      result.security * 0.20 +
+      result.privacy * 0.20 +
+      result.sustainability * 0.15 +
+      result.infrastructure * 0.05;
     
     result.pscore = Math.round(pscore * 10) / 10;
 
@@ -542,36 +463,32 @@ export async function onRequestPost(context) {
     else if (result.pscore >= 60) result.rating = 'CC';
     else result.rating = 'C';
 
+    // ========================================================================
+    // METADATA
+    // ========================================================================
     result._meta = {
       scannedAt: new Date().toISOString(),
-      version: '2.1-diagnostic',
+      version: '3.0-pivot',
       loadTimeMs: rawLoadTime,
       pageSizeMB: Math.round(sizeMB * 100) / 100,
       resourceCount: analysis.resourceCount,
-      sector: sector,
-      benchmark: BENCHMARK_DATA[result.rating],
       dataSource: cruxData.hasData ? 'crux' : (lighthouseData.hasData ? 'lighthouse' : 'lab'),
       usedRealUserData: cruxData.hasData,
       usedLighthouse: lighthouseData.hasData,
-      coverage: '100%',
+      coverage: lighthouseData.hasData ? '100%' : (cruxData.hasData ? '80%' : '60%'),
       weightings: {
-        speed: 0.25,
-        mobile: 0.20,
-        seo: 0.15,
-        responsiveness: 0.12,
-        accessibility: 0.10,
-        privacy: 0.08,
-        delivery: 0.06,
-        sustainability: 0.04
+        performance: 0.40,
+        security: 0.20,
+        privacy: 0.20,
+        sustainability: 0.15,
+        infrastructure: 0.05
       },
-      // Add diagnostic info
-      diagnostics: {
-        cruxAttempted: true,
-        cruxSuccess: cruxData.hasData,
-        cruxError: cruxData.hasData ? null : (cruxData.errorDetails || cruxData.reason),
-        lighthouseAttempted: USE_LIGHTHOUSE,
-        lighthouseSuccess: lighthouseData.hasData,
-        lighthouseError: lighthouseData.hasData ? null : (lighthouseData.errorDetails || lighthouseData.reason)
+      privacyMetrics: {
+        cookieCount: cookieCount,
+        trackerCount: trackerCount,
+        thirdPartyDomains: thirdPartyDomains,
+        hasPrivacyPolicy: hasPrivacyPolicy,
+        hasCookieConsent: hasCookieConsent
       }
     };
 
