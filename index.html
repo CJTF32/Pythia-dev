@@ -1202,36 +1202,110 @@ async function scanTechCompetitor() {
       }).join('');
     }
     
-    function generateFixRecommendations(data) {
-      const issues = [
-  { score: data.speed || 0, name: 'Speed', fix: 'Optimize images, enable compression, use CDN' },
-  { score: data.mobile || 0, name: 'Mobile', fix: 'Add viewport, use responsive images, lazy loading' },
-  { score: data.seo || 0, name: 'SEO', fix: 'Add meta descriptions, structured data' },
-  { score: data.responsiveness || 0, name: 'Responsiveness', fix: 'Defer non-critical scripts, reduce JavaScript' },
-  { score: data.accessibility || 0, name: 'Accessibility', fix: 'Add alt text, ARIA labels' },
-  { score: data.privacy || 0, name: 'Privacy', fix: 'Enable HTTPS, security headers (CSP, HSTS)' },
-  { score: data.delivery || 0, name: 'Delivery', fix: 'Configure CDN, cache headers, compression' },
-  { score: data.sustainability || 0, name: 'Sustainability', fix: 'Reduce page weight, optimize images, green hosting' }
-].sort((a, b) => a.score - b.score).slice(0, 5);
+    // ============================================================================
+// ENHANCED RECOMMENDATIONS WITH LIGHTHOUSE INTEGRATION
+// ============================================================================
+// Replace the generateFixRecommendations() function in your HTML with this
+
+function generateFixRecommendations(data) {
+  const container = document.getElementById('fixRecommendations');
+  
+  // Check if we have Lighthouse opportunities
+  if (data.lighthouse?.hasData && data.lighthouse.opportunities?.length > 0) {
+    // 🔥 USE LIGHTHOUSE SPECIFIC RECOMMENDATIONS
+    const opportunities = data.lighthouse.opportunities.slice(0, 5);
+    
+    container.innerHTML = `
+      <div class="mb-4 flex items-center gap-2">
+        <span class="text-sm font-semibold text-indigo-600">🔬 Lighthouse Lab Analysis</span>
+      </div>
+    ` + opportunities.map((opp, index) => {
+      const priority = index === 0 ? '🔴 Critical' : index === 1 ? '🟠 High' : '🟡 Medium';
+      const borderColor = index === 0 ? 'border-red-500' : index === 1 ? 'border-orange-500' : 'border-yellow-500';
       
-      document.getElementById('fixRecommendations').innerHTML = issues.map((issue, index) => {
-        const priority = index === 0 ? '🔴 Critical' : index === 1 ? '🟠 High' : '🟡 Medium';
-        const borderColor = index === 0 ? 'border-red-500' : index === 1 ? 'border-orange-500' : 'border-yellow-500';
-        return `
-          <div class="border-l-4 ${borderColor} pl-4 py-2">
-            <div class="flex justify-between mb-2">
-              <div>
-                <span class="font-semibold text-sm">${priority}</span>
-                <h3 class="font-bold text-lg">${issue.name}</h3>
-              </div>
-              <span class="${getScoreColor(issue.score)} font-bold text-xl">${issue.score.toFixed(1)}/100</span>
-            </div>
-            <p class="text-gray-600 text-sm">${issue.fix}</p>
+      // Format the savings/impact
+      let impact = '';
+      if (opp.displayValue) {
+        impact = opp.displayValue;
+      } else if (opp.numericValue && opp.numericUnit === 'millisecond') {
+        const seconds = (opp.numericValue / 1000).toFixed(2);
+        impact = `Potential savings: ${seconds}s`;
+      } else if (opp.numericValue && opp.numericUnit === 'byte') {
+        const kb = (opp.numericValue / 1024).toFixed(0);
+        impact = `Potential savings: ${kb} KiB`;
+      }
+      
+      // Format specific resources if available
+      let resources = '';
+      if (opp.details && opp.details.length > 0) {
+        const topResources = opp.details.slice(0, 3);
+        resources = `
+          <div class="mt-2 text-xs text-gray-500">
+            <div class="font-semibold mb-1">Affected resources:</div>
+            ${topResources.map(item => {
+              const url = item.url || item.source || '';
+              const filename = url.split('/').pop() || url;
+              const value = item.wastedMs ? `${Math.round(item.wastedMs)}ms` : 
+                           item.wastedBytes ? `${Math.round(item.wastedBytes/1024)}kb` : '';
+              return `<div class="truncate">• ${filename} ${value ? `(${value})` : ''}</div>`;
+            }).join('')}
+            ${opp.details.length > 3 ? `<div class="text-gray-400">...and ${opp.details.length - 3} more</div>` : ''}
           </div>
         `;
-      }).join('');
-    }
+      }
+      
+      return `
+        <div class="border-l-4 ${borderColor} pl-4 py-3 mb-3 bg-gray-50 rounded-r">
+          <div class="flex justify-between mb-2">
+            <div class="flex-1">
+              <span class="font-semibold text-xs">${priority}</span>
+              <h3 class="font-bold text-base">${opp.title}</h3>
+              ${impact ? `<p class="text-sm font-semibold text-indigo-600 mt-1">${impact}</p>` : ''}
+            </div>
+            <span class="text-gray-400 text-xs">${Math.round(opp.score * 100)}/100</span>
+          </div>
+          <p class="text-gray-600 text-sm leading-relaxed">${opp.description}</p>
+          ${resources}
+        </div>
+      `;
+    }).join('');
     
+  } else {
+    // 🔧 FALLBACK TO GENERIC RECOMMENDATIONS
+    const issues = [
+      { score: data.speed || 0, name: 'Speed', fix: 'Optimize images, enable compression, use CDN', icon: '⚡' },
+      { score: data.mobile || 0, name: 'Mobile', fix: 'Add viewport, use responsive images, lazy loading', icon: '📱' },
+      { score: data.seo || 0, name: 'SEO', fix: 'Add meta descriptions, structured data, optimize titles', icon: '🔍' },
+      { score: data.responsiveness || 0, name: 'Responsiveness', fix: 'Defer non-critical scripts, reduce JavaScript execution', icon: '⚡' },
+      { score: data.accessibility || 0, name: 'Accessibility', fix: 'Add alt text, ARIA labels, semantic HTML', icon: '♿' },
+      { score: data.privacy || 0, name: 'Privacy', fix: 'Enable HTTPS, add security headers (CSP, HSTS)', icon: '🔒' },
+      { score: data.delivery || 0, name: 'Delivery', fix: 'Configure CDN, cache headers, enable compression', icon: '🚀' },
+      { score: data.sustainability || 0, name: 'Sustainability', fix: 'Reduce page weight, optimize images, use green hosting', icon: '🌱' }
+    ].sort((a, b) => a.score - b.score).slice(0, 5);
+    
+    container.innerHTML = `
+      <div class="mb-4 flex items-center gap-2">
+        <span class="text-sm font-semibold text-gray-500">📊 Pythia Analysis</span>
+        <span class="text-xs text-gray-400">(Generic recommendations - run with Lighthouse for specifics)</span>
+      </div>
+    ` + issues.map((issue, index) => {
+      const priority = index === 0 ? '🔴 Critical' : index === 1 ? '🟠 High' : '🟡 Medium';
+      const borderColor = index === 0 ? 'border-red-500' : index === 1 ? 'border-orange-500' : 'border-yellow-500';
+      return `
+        <div class="border-l-4 ${borderColor} pl-4 py-2">
+          <div class="flex justify-between mb-2">
+            <div>
+              <span class="font-semibold text-sm">${priority}</span>
+              <h3 class="font-bold text-lg">${issue.icon} ${issue.name}</h3>
+            </div>
+            <span class="${getScoreColor(issue.score)} font-bold text-xl">${issue.score.toFixed(1)}/100</span>
+          </div>
+          <p class="text-gray-600 text-sm">${issue.fix}</p>
+        </div>
+      `;
+    }).join('');
+  }
+}
     
     function downloadReport() {
       const { jsPDF } = window.jspdf;
