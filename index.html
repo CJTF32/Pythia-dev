@@ -1650,6 +1650,11 @@ function getScoreColor(score) {
     document.getElementById('urlInput').addEventListener('keypress', function(e) {
       if (e.key === 'Enter') scanWebsite();
     });
+
+    document.getElementById('joinWaitlistBtn').onclick = function() {
+        document.getElementById('waitlistModal').classList.add('hidden');
+    };
+
   </script>
 
         <div id="waitlistModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50">
@@ -1672,12 +1677,6 @@ function getScoreColor(score) {
         </div>
     </div>
 </div>
-
-<script>
-    document.getElementById('joinWaitlistBtn').onclick = function() {
-        document.getElementById('waitlistModal').classList.add('hidden');
-    };
-</script>
         
 </body>
 </html>
