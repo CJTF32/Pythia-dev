@@ -455,6 +455,19 @@ export async function onRequestPost(context) {
     }
     // END GATING BLOCK
 
+    // START GATING BLOCK
+if (IS_PAID_USER) {
+    try {
+        cruxData = await fetchCruxData(targetUrl);
+    } catch (error) {
+        console.error('CrUX error (non-fatal):', error);
+    }
+} else {
+    console.log('🔒 CrUX data skipped (Paid feature).');
+}
+result.crux = cruxData; // <-- ADD THIS LINE HERE
+// END GATING BLOCK
+    
     // ========================================================================
     // PHASE 3: Fetch Lighthouse data
     // ========================================================================
