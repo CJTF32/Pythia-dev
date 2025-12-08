@@ -624,10 +624,10 @@
     }
     
     function showManualScanModal(url) {
-      document.getElementById('blockedUrl').value = url;
-      document.getElementById('blockedUrlDisplay').value = url;
-      document.getElementById('manualScanModal').classList.add('show');
-    }
+  document.getElementById('blockedUrlHidden').value = url;
+  document.getElementById('blockedUrlDisplay').value = url;
+  document.getElementById('manualScanModal').classList.add('show');
+}
     
     function closeManualScan(event) {
       if (!event || event.target.id === 'manualScanModal') {
