@@ -22,8 +22,8 @@ export async function onRequestPost(context) {
     const CRUX_API_URL = 'https://chromeuxreport.googleapis.com/v1/records:queryRecord';
     const PSI_API_KEY = 'AIzaSyBYVTe6sRJGyB9vtI0cnvBxRFQ4ruNPf8M';
     const PSI_API_URL = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed';
-    const USE_LIGHTHOUSE = true;
-
+    const IS_PAID_USER = false; // <-- NEW: Set to 'false' for free tier. Integrate with your auth.
+    const USE_LIGHTHOUSE = IS_PAID_USER; // Use the paid flag to control Lighthouse
     // ========================================================================
     // HELPER FUNCTIONS
     // ========================================================================
@@ -442,12 +442,18 @@ export async function onRequestPost(context) {
     // ========================================================================
     console.log('📊 Fetching CrUX data...');
     let cruxData = { hasData: false };
-    try {
-      cruxData = await fetchCruxData(targetUrl);
-    } catch (error) {
-      console.error('CrUX error (non-fatal):', error);
+    
+    // START GATING BLOCK
+    if (IS_PAID_USER) {
+        try {
+            cruxData = await fetchCruxData(targetUrl);
+        } catch (error) {
+            console.error('CrUX error (non-fatal):', error);
+        }
+    } else {
+        console.log('🔒 CrUX data skipped (Paid feature).');
     }
-    result.crux = cruxData;
+    // END GATING BLOCK
 
     // ========================================================================
     // PHASE 3: Fetch Lighthouse data
@@ -507,6 +513,9 @@ export async function onRequestPost(context) {
     // METADATA
     // ========================================================================
     result._meta = {
+      usedRealUserData: cruxData.hasData,
+      isPaidContentBlocked: !IS_PAID_USER, // <-- NEW FLAG: True if user is NOT paid
+      usedLighthouse: lighthouseData.hasData,
       scannedAt: new Date().toISOString(),
       version: '3.0-pivot',
       loadTimeMs: rawLoadTime,
