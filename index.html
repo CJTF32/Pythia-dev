@@ -812,7 +812,18 @@
         statusMessage.innerHTML = '<p class="text-red-600">Please enter a URL</p>';
         return;
       }
+
+      statusMessage.innerHTML = `...`; // If data.error was true, this is executed
+        return;
+      }
+
+      // **NEW PAYWALL CHECK** (Insert this block at Line 442)
+      if (data._meta?.isPaidContentBlocked) {
+          document.getElementById('waitlistModal').classList.remove('hidden');
+      }
       
+      currentScanData = { ...data, url }; // Original code continues
+      displayResults(data, url);
       scanBtn.disabled = true;
       scanBtn.textContent = 'Scanning...';
       statusMessage.innerHTML = '<p class="text-indigo-600 animate-pulse">Analyzing website performance...</p>';
@@ -1641,5 +1652,32 @@ function getScoreColor(score) {
     });
   </script>
 
+        <div id="waitlistModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Unlock Full Data! 🚀</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">
+                    Your current scan is an **HTML-only** analysis. Real User Data (CrUX) and full Lab Data (Lighthouse) are reserved for paid users.
+                </p>
+                <p class="mt-3 text-sm font-semibold text-gray-700">
+                    Join a waitlist to access the complete Pythia™ P-Score.
+                </p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <a href="YOUR_WAITLIST_URL_HERE" target="_blank" id="joinWaitlistBtn" class="px-4 py-2 bg-indigo-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    Join Waitlist
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('joinWaitlistBtn').onclick = function() {
+        document.getElementById('waitlistModal').classList.add('hidden');
+    };
+</script>
+        
 </body>
 </html>
