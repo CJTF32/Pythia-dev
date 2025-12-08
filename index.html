@@ -611,8 +611,7 @@
     }
     
     function showManualScanModal(url) {
-  document.getElementById('blockedUrlHidden').value = url;
-  document.getElementById('blockedUrlDisplay').value = url;
+  document.getElementById('blockedUrlDisplay').textContent = url;
   document.getElementById('manualScanModal').classList.add('show');
 }
     
