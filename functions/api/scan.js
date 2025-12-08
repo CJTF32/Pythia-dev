@@ -453,6 +453,9 @@ export async function onRequestPost(context) {
     } else {
         console.log('🔒 CrUX data skipped (Paid feature).');
     }
+
+    result.crux = cruxData; // <-- ADD THIS LINE RIGHT HERE (after line 253)
+
     // END GATING BLOCK
 
     // START GATING BLOCK
