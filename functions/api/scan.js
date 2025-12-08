@@ -236,27 +236,76 @@ export async function onRequestPost(context) {
 
     console.log('🎯 Scanning:', targetUrl);
     
-    const startTime = Date.now();
-    const response = await fetch(targetUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; PythiaBot/1.0; +https://pythia.dev)'
-      },
-      signal: AbortSignal.timeout(15000)
-    });
-    
-    if (!response.ok) {
+   const startTime = Date.now();
+let response;
+let html;
+
+try {
+  response = await fetch(targetUrl, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; PythiaBot/1.0; +https://pythia.dev)'
+    },
+    signal: AbortSignal.timeout(15000)
+  });
+
+  if (!response.ok) {
+    // Check for bot blocking (403, 429, or specific error pages)
+    if (response.status === 403 || response.status === 429) {
       return new Response(JSON.stringify({ 
-        error: response.status === 404 ? 'SITE_NOT_FOUND' : 'CONNECTION_FAILED' 
+        error: 'BLOCKED_SCAN',
+        message: 'This site blocks automated scanning tools'
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
     
-    const rawLoadTime = Date.now() - startTime;
-    const html = await response.text();
-    const responseHeaders = response.headers;
+    return new Response(JSON.stringify({ 
+      error: response.status === 404 ? 'SITE_NOT_FOUND' : 'CONNECTION_FAILED' 
+    }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
 
+  html = await response.text();
+  
+  // Check if the HTML contains bot detection patterns
+  const botBlockPatterns = [
+    /access denied/i,
+    /you have been blocked/i,
+    /captcha/i,
+    /cloudflare/i,
+    /bot detection/i,
+    /automated access/i,
+    /forbidden.*bot/i
+  ];
+  
+  const isBlocked = botBlockPatterns.some(pattern => pattern.test(html));
+  
+  if (isBlocked) {
+    return new Response(JSON.stringify({ 
+      error: 'BLOCKED_SCAN',
+      message: 'This site has bot protection enabled'
+    }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+} catch (error) {
+  if (error.name === 'AbortError') {
+    return new Response(JSON.stringify({ error: 'TIMEOUT' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+  throw error;
+}
+
+const rawLoadTime = Date.now() - startTime;
+const responseHeaders = response.headers;
+    
     // Calculate page size
     const sizeMB = new Blob([html]).size / (1024 * 1024);
 
