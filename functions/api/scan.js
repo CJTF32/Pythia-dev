@@ -22,8 +22,8 @@ export async function onRequestPost(context) {
     const CRUX_API_URL = 'https://chromeuxreport.googleapis.com/v1/records:queryRecord';
     const PSI_API_KEY = 'AIzaSyBYVTe6sRJGyB9vtI0cnvBxRFQ4ruNPf8M';
     const PSI_API_URL = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed';
-    const IS_PAID_USER = false; // <-- NEW: Set to 'false' for free tier. Integrate with your auth.
-    const USE_LIGHTHOUSE = IS_PAID_USER; // Use the paid flag to control Lighthouse
+    const IS_PAID_USER = true;  // Enable data fetching
+    const USE_LIGHTHOUSE = true;
     // ========================================================================
     // HELPER FUNCTIONS
     // ========================================================================
