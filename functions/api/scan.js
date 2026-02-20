@@ -110,7 +110,7 @@ export async function onRequestPost(context) {
         const psiUrl = `${PSI_API_URL}?url=${encodeURIComponent(siteUrl)}&strategy=desktop&category=performance&key=${PSI_API_KEY}`;
 
         console.log('🔬 Fetching Lighthouse data...');
-        const response = await fetch(psiUrl, { signal: AbortSignal.timeout(30000) });
+        const response = await fetch(psiUrl, { signal: AbortSignal.timeout(25000) });
 
         if (!response.ok) return { hasData: false, reason: 'api_error' };
 
@@ -455,29 +455,28 @@ export async function onRequestPost(context) {
     result.infrastructure = Math.round(clamp(infrastructureScore) * 10) / 10;
 
     // ════════════════════════════════════════════════════════════════════════
-    // PHASE 4: CrUX (real-user data) — unaffected by bot-blocking
+    // PHASE 4+5: CrUX and Lighthouse — run IN PARALLEL with Promise.all
+    //   Both call Google's infrastructure, not the target site.
+    //   Sequential calls meant Lighthouse (20-30s) ate the Worker's entire
+    //   time budget before CrUX ran. Parallel cuts wall-clock in half.
     // ════════════════════════════════════════════════════════════════════════
-    let cruxData = { hasData: false };
-    if (IS_PAID_USER) {
-      try {
-        cruxData = await fetchCruxData(targetUrl);
-      } catch (error) {
-        console.error('CrUX error (non-fatal):', error);
-      }
-    }
-    result.crux = cruxData;
+    const [cruxData, lighthouseData] = await Promise.all([
+      IS_PAID_USER
+        ? fetchCruxData(targetUrl).catch(err => {
+            console.error('CrUX error (non-fatal):', err);
+            return { hasData: false };
+          })
+        : Promise.resolve({ hasData: false }),
 
-    // ════════════════════════════════════════════════════════════════════════
-    // PHASE 5: Lighthouse — also unaffected by bot-blocking
-    // ════════════════════════════════════════════════════════════════════════
-    let lighthouseData = { hasData: false };
-    if (USE_LIGHTHOUSE) {
-      try {
-        lighthouseData = await fetchLighthouseData(targetUrl);
-      } catch (error) {
-        console.error('Lighthouse error (non-fatal):', error);
-      }
-    }
+      USE_LIGHTHOUSE
+        ? fetchLighthouseData(targetUrl).catch(err => {
+            console.error('Lighthouse error (non-fatal):', err);
+            return { hasData: false };
+          })
+        : Promise.resolve({ hasData: false })
+    ]);
+
+    result.crux = cruxData;
     result.lighthouse = lighthouseData;
 
     // ── INDEX 1: Performance (40%) — from Lighthouse, else CrUX, else load time
