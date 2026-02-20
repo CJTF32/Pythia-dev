@@ -49,7 +49,7 @@ export async function onRequestPost(context) {
       return value <= points[0][0] ? points[0][1] : points[points.length - 1][1];
     }
 
-    // ── CrUX ────────────────────────────────────────────────────────────────
+   // ── CrUX ────────────────────────────────────────────────────────────────
     async function fetchCruxData(siteUrl) {
       try {
         const urlObj = new URL(siteUrl);
@@ -57,19 +57,29 @@ export async function onRequestPost(context) {
 
         console.log('📊 Fetching CrUX data for:', origin);
 
-        // Try desktop first, fall back to all form factors
+        // Standardize headers to prevent Google from blocking the serverless IP
+        const cruxHeaders = { 
+            'Content-Type': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Referer': 'https://pythia-rating.com/' 
+        };
+
+        // FIX 1: Use the "origin" key instead of "url" to get domain-wide metrics
         let response = await fetch(`${CRUX_API_URL}?key=${CRUX_API_KEY}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: origin, formFactor: 'DESKTOP' })
+          headers: cruxHeaders,
+          body: JSON.stringify({ origin: origin, formFactor: 'DESKTOP' })
         });
+        
         let data = await response.json();
 
+        // Fall back to all form factors if desktop fails
         if (!response.ok || !data.record) {
+          // FIX 2: Ensure the fallback also uses the "origin" key
           response = await fetch(`${CRUX_API_URL}?key=${CRUX_API_KEY}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: origin })
+            headers: cruxHeaders,
+            body: JSON.stringify({ origin: origin })
           });
           data = await response.json();
         }
