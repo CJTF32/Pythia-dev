@@ -215,6 +215,22 @@
 
       <!-- Results Section -->
       <div id="results" class="hidden">
+
+        <!-- Partial Scan Banner — shown when site blocked HTML fetch but Lighthouse/CrUX still ran -->
+        <div id="partialScanBanner" class="hidden card rounded-lg shadow-md p-5 mb-6 border-2 border-amber-400 bg-amber-50">
+          <div class="flex items-start gap-3">
+            <span class="text-2xl flex-shrink-0">⚠️</span>
+            <div>
+              <p class="font-bold text-amber-900 text-lg mb-1">Partial Scan — Site Has Bot Protection</p>
+              <p id="partialScanReason" class="text-amber-800 text-sm mb-2"></p>
+              <p class="text-amber-700 text-sm">
+                <strong>Performance score is from Google Lighthouse &amp; CrUX</strong> (accurate — these use Google's own infrastructure, not our crawler).
+                Security score is from response headers. Privacy &amp; some Sustainability signals are marked as unavailable.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div class="card rounded-lg shadow-md p-12 mb-8 text-center">
           <div class="credit-rating text-indigo-600 mb-4" id="ratingValue"></div>
           <div class="text-2xl text-gray-600 mb-2">Pythia™ Rating</div>
@@ -310,6 +326,20 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Security Headers Detail Card — populated by displaySecurityDetails() -->
+        <div class="card rounded-lg shadow-md p-8 mb-8" id="securityDetailsCard" style="display:none">
+          <h2 class="text-2xl font-bold text-gray-800 mb-2">🔒 Security Headers</h2>
+          <p class="text-sm text-gray-500 mb-4">HTTP response headers that protect against common attacks</p>
+          <div id="securityDetailsContent"></div>
+        </div>
+
+        <!-- Privacy & Tracking Detail Card — populated by displayPrivacyDetails() -->
+        <div class="card rounded-lg shadow-md p-8 mb-8" id="privacyDetailsCard" style="display:none">
+          <h2 class="text-2xl font-bold text-gray-800 mb-2">🛡️ Privacy &amp; Tracking</h2>
+          <p class="text-sm text-gray-500 mb-4">Cookies, third-party trackers, and GDPR compliance signals</p>
+          <div id="privacyDetailsContent"></div>
         </div>
 
         <div class="card rounded-lg shadow-md p-8 mb-8">
@@ -521,12 +551,12 @@
         <h3 class="text-2xl font-bold text-gray-800 mb-4">Get in Touch</h3>
         <p class="text-gray-700 mb-4">Have questions? Want to discuss partnerships or enterprise needs?</p>
         <p class="text-xl text-indigo-600 font-semibold">
-<a href="mailto:info@pythia-rating.com" class="hover:underline">info@pythia-rating.com</a>        </p>
+<a href="/cdn-cgi/l/email-protection#9ff6f1f9f0dfefe6ebf7f6feb2edfeebf6f1f8b1fcf0f2" class="hover:underline"><span class="__cf_email__" data-cfemail="40292e262f003039342829216d322134292e276e232f2d">[email&#160;protected]</span></a>        </p>
       </div>
     </div>
   </section>
 
-  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
     // Particle animation with mouse following
     const canvas = document.getElementById('particleCanvas');
     const ctx = canvas.getContext('2d');
@@ -625,7 +655,8 @@
   
     // Show tech PDF button when techDetails is expanded
       if (id === 'techDetails' && element.classList.contains('expanded')) {
-      document.getElementById('techPdfBtn').classList.remove('hidden');
+        const btn = document.getElementById('techComparisonPdfBtn');
+        if (btn) btn.classList.remove('hidden');
       }
     }
     
@@ -802,6 +833,8 @@
 
     // Handle errors
     if (data.error) {
+      // v3.1 scan.js no longer returns BLOCKED_SCAN — bot-blocked sites now get partial scans.
+      // Keeping this handler for legacy compatibility only.
       if (data.error === 'BLOCKED_SCAN') {
         statusMessage.innerHTML = '';
         showManualScanModal(url);
@@ -1041,6 +1074,15 @@ async function scanTechCompetitor() {
   document.getElementById('pscoreValue').textContent = data.pscore;
   document.getElementById('ratingValue').textContent = data.rating;
   document.getElementById('ratingValue').className = 'credit-rating mb-4 ' + getRatingColor(data.rating);
+
+  // Show/hide partial scan banner
+  const partialBanner = document.getElementById('partialScanBanner');
+  if (data._meta?.isPartialScan) {
+    document.getElementById('partialScanReason').textContent = data._meta.partialScanReason || '';
+    partialBanner.classList.remove('hidden');
+  } else {
+    partialBanner.classList.add('hidden');
+  }
   
   // PHASE 3: Enhanced data source display
   const resultsSection = document.getElementById('results');
@@ -1148,6 +1190,8 @@ async function scanTechCompetitor() {
       
       displayOpportunityLoss(data);
       displayTechShortfall(data);
+      displaySecurityDetails(data);
+      displayPrivacyDetails(data);
       generateFixRecommendations(data);
       
       document.getElementById('results').classList.remove('hidden');
@@ -1204,7 +1248,80 @@ async function scanTechCompetitor() {
         `;
       }).join('');
     }
-    
+
+    // ============================================================================
+    // SECURITY HEADERS DETAIL CARD
+    // ============================================================================
+    function displaySecurityDetails(data) {
+      if (!data.security_details) return;
+      const d = data.security_details;
+      const headers = [
+        { label: 'HTTPS',                      present: d.https,               points: 35, note: 'Encrypts all data in transit' },
+        { label: 'HSTS',                        present: d.hsts,                points: 18, note: 'Forces HTTPS even if user types http://' },
+        { label: 'Content Security Policy',     present: d.csp,                 points: 22, note: 'Prevents XSS and injection attacks' },
+        { label: 'X-Frame-Options',             present: d.xFrameOptions,       points: 16, note: 'Blocks clickjacking attacks' },
+        { label: 'Permissions-Policy',          present: d.permissionsPolicy,   points: 9,  note: 'Controls browser feature access' },
+        { label: 'Referrer-Policy',             present: d.referrerPolicy,      points: 5,  note: 'Controls referrer data leakage' },
+        { label: 'X-Content-Type-Options',      present: d.xContentTypeOptions, points: 5,  note: 'Prevents MIME-type sniffing attacks' }
+      ];
+      document.getElementById('securityDetailsContent').innerHTML = headers.map(h => `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid #f3f4f6;">
+          <div>
+            <span class="font-medium text-gray-800">${h.label}</span>
+            <span class="text-xs text-gray-400 ml-2">(+${h.points} pts)</span>
+            <div class="text-xs text-gray-500">${h.note}</div>
+          </div>
+          <span class="font-bold text-sm ${h.present ? 'text-green-600' : 'text-red-500'} flex-shrink-0 ml-4">
+            ${h.present ? '✓ Active' : '✗ Missing'}
+          </span>
+        </div>`).join('');
+      document.getElementById('securityDetailsCard').style.display = 'block';
+    }
+
+    // ============================================================================
+    // PRIVACY & TRACKING DETAIL CARD
+    // ============================================================================
+    function displayPrivacyDetails(data) {
+      const d = data.privacy_details || data._meta?.privacyMetrics;
+      if (!d) return;
+      const isPartial = d.isPartial || data._meta?.isPartialScan;
+      document.getElementById('privacyDetailsContent').innerHTML = `
+        ${isPartial ? `<div class="bg-amber-50 border border-amber-300 rounded p-3 mb-4 text-sm text-amber-800">
+          ⚠️ Site blocks crawlers — tracker and privacy policy detection unavailable. Cookie count is from HTTP headers only.
+        </div>` : ''}
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
+          <div class="p-3 bg-gray-50 rounded-lg">
+            <div class="text-gray-500 text-xs mb-1">Cookies (Set-Cookie)</div>
+            <div class="font-bold text-2xl">${d.cookieCount ?? '–'}</div>
+            <div class="text-xs ${(d.cookieCount || 0) === 0 ? 'text-green-600' : (d.cookieCount || 0) <= 5 ? 'text-yellow-600' : 'text-red-600'}">${(d.cookieCount || 0) === 0 ? '🟢 None' : (d.cookieCount || 0) <= 5 ? '🟡 Low' : '🔴 High'}</div>
+          </div>
+          <div class="p-3 bg-gray-50 rounded-lg">
+            <div class="text-gray-500 text-xs mb-1">Trackers</div>
+            <div class="font-bold text-2xl">${isPartial ? '–' : (d.trackerCount ?? 0)}</div>
+            <div class="text-xs ${isPartial ? 'text-gray-400' : (d.trackerCount || 0) === 0 ? 'text-green-600' : 'text-red-600'}">${isPartial ? '⚫ N/A' : (d.trackerCount || 0) === 0 ? '🟢 Clean' : '🔴 Detected'}</div>
+          </div>
+          <div class="p-3 bg-gray-50 rounded-lg">
+            <div class="text-gray-500 text-xs mb-1">3rd-party Domains</div>
+            <div class="font-bold text-2xl">${isPartial ? '–' : (d.thirdPartyDomains ?? 0)}</div>
+            <div class="text-xs ${isPartial ? 'text-gray-400' : (d.thirdPartyDomains || 0) < 5 ? 'text-green-600' : (d.thirdPartyDomains || 0) <= 10 ? 'text-yellow-600' : 'text-red-600'}">${isPartial ? '⚫ N/A' : (d.thirdPartyDomains || 0) < 5 ? '🟢 Low' : (d.thirdPartyDomains || 0) <= 10 ? '🟡 Medium' : '🔴 High'}</div>
+          </div>
+          <div class="p-3 bg-gray-50 rounded-lg">
+            <div class="text-gray-500 text-xs mb-1">Privacy Policy</div>
+            <div class="font-bold text-lg mt-1">${isPartial ? '–' : d.hasPrivacyPolicy ? '🟢 Found' : '🔴 Missing'}</div>
+          </div>
+        </div>
+        ${!isPartial && d.trackerNames && d.trackerNames.length > 0 ? `
+          <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-sm mb-3">
+            <strong class="text-red-800">Active Trackers:</strong>
+            <span class="text-red-700 ml-2">${d.trackerNames.join(', ')}</span>
+          </div>` : ''}
+        ${!isPartial && d.hasCookieConsent !== undefined && d.hasCookieConsent !== null ? `
+          <div class="text-sm ${d.hasCookieConsent ? 'text-green-700' : 'text-orange-700'}">
+            Cookie consent banner: ${d.hasCookieConsent ? '✓ Detected (GDPR signal present)' : '⚠ Not detected'}
+          </div>` : ''}`;
+      document.getElementById('privacyDetailsCard').style.display = 'block';
+    }
+
     // ============================================================================
 // ENHANCED RECOMMENDATIONS WITH LIGHTHOUSE INTEGRATION
 // ============================================================================
@@ -1634,16 +1751,4 @@ document.addEventListener('keydown', (event) => {
         <button 
           type="button"
           onclick="document.getElementById('waitlistModal').classList.add('hidden')" 
-          class="mt-2 w-full px-4 py-2 bg-gray-200 text-gray-700 text-base font-medium rounded-md hover:bg-gray-300"
-        >
-          Close
-        </button>
-      </form>
-      
-    </div>
-  </div>
-</div>
-
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
-</body>
-</html>
+          class="mt-2 w-full px-4 py-2 bg-gray-200 text-gray-700 text-base font-medium
