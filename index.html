@@ -518,8 +518,8 @@
           </div>
           <ul class="space-y-2 text-sm text-gray-700 mb-6">
             <li>✓ Everything in Pro</li>
-            <li>✓ <strong>Full Lighthouse browser audit</strong></li>
-            <li>✓ Filmstrips, waterfalls, detailed metrics</li>
+            <li>✓ <strong>Full PageSpeed Insights audit</strong></li>
+            <li>✓ Detailed performance metrics & opportunities</li>
             <li>✓ Up to 20 client portfolios (volume discounts for extras)</li>
             <li>✓ White-label PDFs</li>
             <li>✓ Client dashboards<li>
@@ -1733,8 +1733,8 @@ document.addEventListener('keydown', (event) => {
         </p>
       </div>
       
-      <!-- FORMSPREE FORM -->
-      <form action="https://formspree.io/f/xgvqwdry" method="POST" class="px-4 py-3">
+     <!-- FORMSPREE FORM -->
+      <form id="waitlistForm" class="px-4 py-3">
         <input 
           type="email" 
           name="email" 
@@ -1745,10 +1745,14 @@ document.addEventListener('keydown', (event) => {
         
         <input type="hidden" name="plan_interest" value="Professional Plan - CrUX/Lighthouse Access" />
         <input type="hidden" name="_subject" value="New Pythia Waitlist Signup" />
-        <input type="hidden" name="_next" value="https://pythia-rating.com?joined=true" />
+        
+        <div id="waitlistSuccess" class="hidden mb-3 p-3 bg-green-50 border border-green-200 rounded-md text-green-700 text-sm font-medium">
+          ✅ You're on the list! We'll be in touch soon.
+        </div>
         
         <button 
-          type="submit" 
+          type="submit"
+          id="waitlistSubmitBtn"
           class="w-full px-4 py-2 bg-indigo-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-indigo-700"
         >
           Join Waitlist
@@ -1756,5 +1760,38 @@ document.addEventListener('keydown', (event) => {
         
         <button 
           type="button"
-          onclick="document.getElementById('waitlistModal').classList.add('hidden')" 
-          class="mt-2 w-full px-4 py-2 bg-gray-200 text-gray-700 text-base font-medium
+          id="waitlistCancelBtn"
+          onclick="document.getElementById('waitlistModal').classList.add('hidden')"
+          class="mt-2 w-full px-4 py-2 bg-gray-200 text-gray-700 text-base font-medium rounded-md hover:bg-gray-300"
+        >
+          Cancel
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('waitlistForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('waitlistSubmitBtn');
+    btn.textContent = 'Submitting...';
+    btn.disabled = true;
+    try {
+      await fetch('https://formspree.io/f/xgvqwdry', {
+        method: 'POST',
+        body: new FormData(this),
+        headers: { 'Accept': 'application/json' }
+      });
+      document.getElementById('waitlistSuccess').classList.remove('hidden');
+      btn.classList.add('hidden');
+      document.getElementById('waitlistCancelBtn').textContent = 'Close';
+    } catch {
+      btn.textContent = 'Error — please try again';
+      btn.disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>
