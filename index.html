@@ -1340,8 +1340,8 @@ function generateFixRecommendations(data) {
         <span class="text-sm font-semibold text-indigo-600">🔬 Lighthouse Lab Analysis</span>
       </div>
     ` + opportunities.map((opp, index) => {
-      const priority = index === 0 ? '🔴 Critical' : index === 1 ? '🟠 High' : '🟡 Medium';
-      const borderColor = index === 0 ? 'border-red-500' : index === 1 ? 'border-orange-500' : 'border-yellow-500';
+      const priority = '💡 Recommended';
+      const borderColor = 'border-indigo-400';
       
       // Format the savings/impact
       let impact = '';
