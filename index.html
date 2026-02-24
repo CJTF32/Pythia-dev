@@ -927,7 +927,7 @@ async function scanCompetitor() {
     
     if (data.error) {
       if (data.error === 'BLOCKED_SCAN') {
-        resultsDiv.innerHTML = '<p class="text-orange-600 text-sm">Site blocks automated scans. <a href="#" onclick="showManualScanModal(\'' + url + '\'); return false;" class="underline font-semibold">Request manual audit ($275)</a></p>';
+        resultsDiv.innerHTML = '<p class="text-orange-600 text-sm">Site blocks automated scans. <a href="#" onclick="showManualScanModal(\'' + url + '\'); return false;" class="underline font-semibold">Request manual audit</a></p>';
         return;
       }
       
