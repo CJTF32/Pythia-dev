@@ -64,24 +64,13 @@ export async function onRequestPost(context) {
             'Referer': 'https://pythia-rating.com/' 
         };
 
-        // FIX 1: Use the "origin" key instead of "url" to get domain-wide metrics
-        let response = await fetch(`${CRUX_API_URL}?key=${CRUX_API_KEY}`, {
+        const response = await fetch(`${CRUX_API_URL}?key=${CRUX_API_KEY}`, {
           method: 'POST',
           headers: cruxHeaders,
-          body: JSON.stringify({ origin: origin, formFactor: 'DESKTOP' })
+          body: JSON.stringify({ origin: origin })
         });
         
-        let data = await response.json();
-
-        // Fall back to all form factors if desktop fails
-        if (!response.ok || !data.record) {
-          // FIX 2: Ensure the fallback also uses the "origin" key
-          response = await fetch(`${CRUX_API_URL}?key=${CRUX_API_KEY}`, {
-            method: 'POST',
-            headers: cruxHeaders,
-            body: JSON.stringify({ origin: origin })
-          });
-          data = await response.json();
+        const data = await response.json();
         }
 
         if (!response.ok || !data.record) {
